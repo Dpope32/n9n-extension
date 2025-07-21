@@ -297,7 +297,6 @@ class UIManager {
   }
 
   setupEventListeners() {
-    console.log('🎯 Setting up UIManager event listeners');
     
     if (!this.sidebar) {
       console.log('❌ No sidebar found for event listeners');
@@ -307,9 +306,7 @@ class UIManager {
     // Header close button
     const headerCloseBtn = this.sidebar.querySelector('#header-close-btn');
     if (headerCloseBtn) {
-      console.log('✅ Found header close button');
       headerCloseBtn.addEventListener('click', (e) => {
-        console.log('🖱️ Header close button clicked');
         e.preventDefault();
         this.closeSidebar();
       });
@@ -320,9 +317,7 @@ class UIManager {
     // New chat button  
     const newChatBtn = this.sidebar.querySelector('#new-chat-btn');
     if (newChatBtn) {
-      console.log('✅ Found new chat button');
       newChatBtn.addEventListener('click', (e) => {
-        console.log('🖱️ New chat button clicked');
         e.preventDefault();
         this.startNewChat();
       });
@@ -333,9 +328,7 @@ class UIManager {
     // Settings button
     const settingsBtn = this.sidebar.querySelector('#settings-btn');
     if (settingsBtn) {
-      console.log('✅ Found settings button');
       settingsBtn.addEventListener('click', (e) => {
-        console.log('🖱️ Settings button clicked');
         e.preventDefault();
         this.openSettings();
       });
@@ -346,9 +339,7 @@ class UIManager {
     // Close conversation button
     const closeConvoBtn = this.sidebar.querySelector('#close-convo-btn');
     if (closeConvoBtn) {
-      console.log('✅ Found close conversation button');
       closeConvoBtn.addEventListener('click', (e) => {
-        console.log('🖱️ Close conversation button clicked');
         e.preventDefault();
         this.closeCurrentConversation();
       });
@@ -357,9 +348,7 @@ class UIManager {
     // Send button
     const sendBtn = this.sidebar.querySelector('#send-btn');
     if (sendBtn) {
-      console.log('✅ Found send button');
       sendBtn.addEventListener('click', (e) => {
-        console.log('🖱️ Send button clicked');
         e.preventDefault();
         this.sendMessage();
       });
@@ -368,10 +357,8 @@ class UIManager {
     // Chat input enter key
     const chatInput = this.sidebar.querySelector('#chat-input');
     if (chatInput) {
-      console.log('✅ Found chat input');
       chatInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
-          console.log('🖱️ Enter key pressed in chat input');
           e.preventDefault();
           this.sendMessage();
         }
@@ -389,10 +376,8 @@ class UIManager {
 
     // Suggestion buttons
     const suggestionBtns = this.sidebar.querySelectorAll('.suggestion-btn');
-    console.log(`✅ Found ${suggestionBtns.length} suggestion buttons`);
     suggestionBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
-        console.log('🖱️ Suggestion button clicked:', e.target.textContent);
         const text = e.target.dataset.text;
         if (text && chatInput) {
           chatInput.value = text;
@@ -404,9 +389,7 @@ class UIManager {
   }
 
   closeSidebar() {
-    console.log('❌ Closing sidebar from UIManager');
     if (window.n9nCopilot && window.n9nCopilot.toggleSidebar) {
-      console.log('✅ Calling n9nCopilot.toggleSidebar()');
       window.n9nCopilot.toggleSidebar();
     } else {
       console.log('❌ window.n9nCopilot not available');
@@ -414,7 +397,6 @@ class UIManager {
   }
 
   startNewChat() {
-    console.log('🆕 Starting new chat from UIManager');
     
     // Hide the conversation pill
     const pill = this.sidebar.querySelector('#current-convo-pill');
@@ -434,47 +416,12 @@ class UIManager {
     this.showNotification('New chat started!', 'success');
   }
 
-  // Helper function to add some demo conversations for testing
-  addDemoConversations() {
-    const demoConversations = [
-      {
-        id: 'demo-1',
-        title: 'Build me a basic workflow that prints todays date',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-        messageCount: 4,
-        lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'demo-2', 
-        title: 'Create a workflow for daily email reports',
-        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-        messageCount: 8,
-        lastActivity: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'demo-3',
-        title: 'Help me sync Google Sheets with Airtable',
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-        messageCount: 12,
-        lastActivity: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-      }
-    ];
-
-    localStorage.setItem('n9n_recent_conversations', JSON.stringify(demoConversations));
-    console.log('📝 Added demo conversations');
-    this.showNotification('Demo conversations added!', 'success');
-    
-    // Re-render to show the conversations
-    this.renderInitialContent();
-  }
 
   openSettings() {
-    console.log('⚙️ Opening settings from UIManager');
     this.showApiKeyModal();
   }
 
   closeCurrentConversation() {
-    console.log('📝 Closing current conversation');
     // Hide the conversation pill
     const pill = this.sidebar.querySelector('#current-convo-pill');
     if (pill) {
@@ -628,7 +575,7 @@ class UIManager {
     conversationItems.forEach(item => {
       item.addEventListener('click', (e) => {
         const conversationId = item.dataset.conversationId;
-        console.log('🗨️ Loading conversation:', conversationId);
+     //   console.log('🗨️ Loading conversation:', conversationId);  
         this.loadConversation(conversationId);
       });
 
@@ -648,7 +595,6 @@ class UIManager {
     const newConvBtn = this.sidebar.querySelector('.new-conversation-btn');
     if (newConvBtn) {
       newConvBtn.addEventListener('click', () => {
-        console.log('🆕 Starting new conversation from recent conversations');
         this.startNewChat();
       });
 
@@ -695,7 +641,6 @@ class UIManager {
       return;
     }
 
-    console.log('👋 Rendering welcome message');
     messagesContainer.innerHTML = `
       <div style="
         flex: 1;
@@ -743,40 +688,6 @@ class UIManager {
         demoBtn.style.color = '#a0a0a0';
       });
     }
-  }
-
-  setupWelcomeSuggestionButtons() {
-    const chatInput = this.sidebar.querySelector('#chat-input');
-    const suggestionBtns = this.sidebar.querySelectorAll('.suggestion-btn');
-    
-    console.log(`✅ Setting up ${suggestionBtns.length} welcome suggestion buttons`);
-    suggestionBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        console.log('🖱️ Welcome suggestion clicked:', e.target.textContent?.trim());
-        const text = e.target.dataset.text || e.target.closest('.suggestion-btn')?.dataset.text;
-        if (text && chatInput) {
-          chatInput.value = text;
-          chatInput.dispatchEvent(new Event('input'));
-          chatInput.focus();
-          
-          // Clear welcome message and show input focused state
-          this.clearMessages();
-        }
-      });
-      
-      // Hover effects
-      btn.addEventListener('mouseenter', () => {
-        btn.style.background = 'rgba(255, 255, 255, 0.1)';
-        btn.style.borderColor = '#555';
-        btn.style.color = '#ffffff';
-      });
-      
-      btn.addEventListener('mouseleave', () => {
-        btn.style.background = 'rgba(255, 255, 255, 0.05)';
-        btn.style.borderColor = '#404040';
-        btn.style.color = '#d1d5db';
-      });
-    });
   }
 
   clearMessages() {
@@ -954,8 +865,7 @@ class UIManager {
     return time.toLocaleDateString();
   }
 
-  showApiKeyModal() {
-    console.log('🔑 Creating API key modal...');
+  async showApiKeyModal() {
     
     // Remove existing modal if any
     const existingModal = document.querySelector('#n9n-api-key-modal');
@@ -964,6 +874,385 @@ class UIManager {
       existingModal.remove();
     }
 
+    // Check if there's already an API key
+    const existingKey = await this.getExistingApiKey();
+    
+    if (existingKey) {
+      this.showApiKeyManagementModal(existingKey);
+    } else {
+      this.showApiKeySetupModal();
+    }
+  }
+
+  async getExistingApiKey() {
+    return new Promise((resolve) => {
+      if (chrome && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get(['n8n_api_key'], (result) => {
+          if (chrome.runtime.lastError) {
+            const localKey = localStorage.getItem('n8n_api_key');
+            resolve(this.validateApiKeyFormat(localKey));
+          } else {
+            const key = result.n8n_api_key;
+            if (key && this.validateApiKeyFormat(key)) {
+              resolve(key);
+            } else {
+              const localKey = localStorage.getItem('n8n_api_key');
+              resolve(this.validateApiKeyFormat(localKey));
+            }
+          }
+        });
+      } else {
+        const key = localStorage.getItem('n8n_api_key');
+        resolve(this.validateApiKeyFormat(key));
+      }
+    });
+  }
+
+  validateApiKeyFormat(key) {
+    if (!key || typeof key !== 'string') return null;
+    if (key.startsWith('{') && key.includes('nodes')) return null; // Corrupted
+    if (key.length < 10) return null; // Too short
+    return key;
+  }
+
+  showApiKeyManagementModal(existingKey) {
+    const maskedKey = this.maskApiKey(existingKey);
+    
+    // Create modal overlay
+    const modalOverlay = document.createElement('div');
+    modalOverlay.id = 'n9n-api-key-modal';
+    modalOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(5px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease;
+    `;
+
+    modalOverlay.innerHTML = `
+      <div style="
+        background: #1a1a1a;
+        border: 1px solid #404040;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 500px;
+        width: 90%;
+        color: #ffffff;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        position: relative;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      ">
+        <button id="close-api-modal" style="
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          background: none;
+          border: none;
+          color: #888;
+          font-size: 20px;
+          cursor: pointer;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">×</button>
+        
+        <div style="margin-bottom: 20px;">
+          <h3 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #ffffff;">🔑 API Key Management</h3>
+          <p style="margin: 0; color: #a0a0a0; font-size: 14px; line-height: 1.5;">
+            Manage your n8n API key settings
+          </p>
+        </div>
+        <div style="margin-bottom: 20px;">
+          <div style="
+            background: #252525;
+            border: 1px solid #404040;
+            border-radius: 8px;
+            padding: 16px;
+          ">
+                         <div style="margin-bottom: 12px;">
+               <h4 style="margin: 0; font-size: 16px; font-weight: 600; color: #3ecf8e;">✅ Current n8n API Key</h4>
+             </div>
+             <div style="
+               display: flex;
+               align-items: center;
+               margin-bottom: 12px;
+             ">
+               <input type="password" id="current-api-key" value="${existingKey}" readonly style="
+                 flex: 1;
+                 padding: 10px 14px;
+                 background: #1a1a1a;
+                 border: 1px solid #555555;
+                 border-radius: 6px;
+                 color: #ffffff;
+                 font-size: 13px;
+                 font-family: 'Courier New', monospace;
+                 outline: none;
+               ">
+             </div>
+             
+             <!-- Action Buttons Row -->
+             <div style="
+               display: flex;
+               align-items: center;
+               gap: 8px;
+               margin-bottom: 8px;
+             ">
+               <button id="toggle-key-visibility" style="
+                 background: none;
+                 border: none;
+                 color: #666666;
+                 font-size: 16px;
+                 cursor: pointer;
+                 transition: all 0.2s;
+                 display: flex;
+                 align-items: center;
+                 justify-content: center;
+                 width: 32px;
+                 height: 32px;
+                 border-radius: 4px;
+               " title="Show/Hide API Key">
+                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                   <circle cx="12" cy="12" r="3"/>
+                 </svg>
+               </button>
+               
+               <button id="copy-api-key" style="
+                 background: none;
+                 border: none;
+                 color: #666666;
+                 font-size: 16px;
+                 cursor: pointer;
+                 transition: all 0.2s;
+                 display: flex;
+                 align-items: center;
+                 justify-content: center;
+                 width: 32px;
+                 height: 32px;
+                 border-radius: 4px;
+               " title="Copy API Key">
+                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                 </svg>
+               </button>
+               
+               <button id="update-api-key" style="
+                 background: none;
+                 border: none;
+                 color: #666666;
+                 font-size: 16px;
+                 cursor: pointer;
+                 transition: all 0.2s;
+                 display: flex;
+                 align-items: center;
+                 justify-content: center;
+                 width: 32px;
+                 height: 32px;
+                 border-radius: 4px;
+               " title="Update API Key">
+                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                   <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                 </svg>
+               </button>
+               
+               <div style="flex: 1;"></div>
+               
+               <button id="delete-api-key" style="
+                 background: none;
+                 border: none;
+                 color: #666666;
+                 font-size: 16px;
+                 cursor: pointer;
+                 transition: all 0.2s;
+                 display: flex;
+                 align-items: center;
+                 justify-content: center;
+                 width: 32px;
+                 height: 32px;
+                 border-radius: 4px;
+               " title="Delete API Key">
+                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                   <polyline points="3,6 5,6 21,6"/>
+                   <path d="M19,6V20a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
+                 </svg>
+               </button>
+             </div>
+          </div>
+        </div>
+        
+        <!-- Help Section -->
+        <div style="margin-bottom: 20px;">
+          <div style="
+            background: #252525;
+            border: 1px solid #404040;
+            border-radius: 8px;
+            padding: 12px;
+          ">
+            <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #ffffff;">💡 Quick Help</h4>
+            <ul style="margin: 0; padding-left: 16px; color: #a0a0a0; font-size: 12px; line-height: 1.5;">
+              <li>Test your API key to ensure it's working properly</li>
+              <li>Update your key if you've generated a new one in n8n</li>
+              <li>Delete to remove the key and start fresh</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button id="close-management-modal" style="
+            padding: 10px 20px;
+            background: #404040;
+            border: 1px solid #555555;
+            border-radius: 6px;
+            color: #a0a0a0;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+          ">Close</button>
+        </div>
+      </div>
+    `;
+
+    // Add animation styles for management modal
+    if (!document.querySelector('#management-modal-styles')) {
+      const animationStyle = document.createElement('style');
+      animationStyle.id = 'management-modal-styles';
+      animationStyle.textContent = `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.7; }
+          50% { opacity: 1; }
+        }
+      `;
+      document.head.appendChild(animationStyle);
+    }
+
+    document.body.appendChild(modalOverlay);
+    this.setupApiKeyManagementListeners(modalOverlay, existingKey);
+  }
+
+  maskApiKey(key) {
+    if (!key || key.length < 8) return key;
+    return key.substring(0, 8) + '•'.repeat(Math.max(0, key.length - 12)) + key.substring(key.length - 4);
+  }
+
+  setupApiKeyManagementListeners(modal, existingKey) {
+    const closeBtn = modal.querySelector('#close-api-modal');
+    const closeManagementBtn = modal.querySelector('#close-management-modal');
+    const toggleVisBtn = modal.querySelector('#toggle-key-visibility');
+    const copyBtn = modal.querySelector('#copy-api-key');
+    const updateBtn = modal.querySelector('#update-api-key');
+    const deleteBtn = modal.querySelector('#delete-api-key');
+    const keyInput = modal.querySelector('#current-api-key');
+
+    const closeModal = () => {
+      modal.remove();
+    };
+
+    // Close handlers
+    closeBtn?.addEventListener('click', closeModal);
+    closeManagementBtn?.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    // Toggle visibility
+    toggleVisBtn?.addEventListener('click', () => {
+      if (keyInput.type === 'password') {
+        keyInput.type = 'text';
+      } else {
+        keyInput.type = 'password';
+      }
+    });
+
+    // Add hover effects for toggle button
+    toggleVisBtn?.addEventListener('mouseenter', () => {
+      toggleVisBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+      toggleVisBtn.style.color = '#ffffff';
+    });
+    toggleVisBtn?.addEventListener('mouseleave', () => {
+      toggleVisBtn.style.background = 'none';
+      toggleVisBtn.style.color = '#666666';
+    });
+
+    // Copy key
+    copyBtn?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(existingKey);
+        this.showNotification('✅ API key copied to clipboard!', 'success');
+      } catch (error) {
+        this.showNotification('❌ Failed to copy API key', 'error');
+      }
+    });
+
+    // Add hover effects for copy button
+    copyBtn?.addEventListener('mouseenter', () => {
+      copyBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+      copyBtn.style.color = '#ffffff';
+    });
+    copyBtn?.addEventListener('mouseleave', () => {
+      copyBtn.style.background = 'none';
+      copyBtn.style.color = '#666666';
+    });
+
+    // Update key
+    updateBtn?.addEventListener('click', () => {
+      modal.remove();
+      this.showApiKeySetupModal(true); // Pass true to indicate it's an update
+    });
+
+    // Add hover effects for update button
+    updateBtn?.addEventListener('mouseenter', () => {
+      updateBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+      updateBtn.style.color = '#ffffff';
+    });
+    updateBtn?.addEventListener('mouseleave', () => {
+      updateBtn.style.background = 'none';
+      updateBtn.style.color = '#666666';
+    });
+
+    // Delete key
+    deleteBtn?.addEventListener('click', () => {
+      if (confirm('Are you sure you want to delete your API key? You\'ll need to enter it again to use n9n features.')) {
+        this.deleteApiKey();
+        modal.remove();
+        this.showNotification('🗑️ API key deleted', 'success');
+      }
+    });
+
+    // Add hover effects for delete button
+    deleteBtn?.addEventListener('mouseenter', () => {
+      deleteBtn.style.background = 'rgba(239, 68, 68, 0.1)';
+      deleteBtn.style.color = '#ef4444';
+    });
+    deleteBtn?.addEventListener('mouseleave', () => {
+      deleteBtn.style.background = 'none';
+      deleteBtn.style.color = '#666666';
+    });
+  }
+
+
+
+  deleteApiKey() {
+    localStorage.removeItem('n8n_api_key');
+    if (chrome && chrome.storage) {
+      chrome.storage.local.remove(['n8n_api_key']);
+    }
+  }
+
+  showApiKeySetupModal(isUpdate = false) {
     // Highlight the profile icon in n8n if we can find it
     this.highlightProfileIcon();
 
@@ -1016,9 +1305,9 @@ class UIManager {
         ">×</button>
         
         <div style="margin-bottom: 20px;">
-          <h3 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #ffffff;">🔑 n8n API Key Required</h3>
+          <h3 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #ffffff;">${isUpdate ? '🔑 Update API Key' : '🔑 n8n API Key Required'}</h3>
           <p style="margin: 0; color: #a0a0a0; font-size: 14px; line-height: 1.5;">
-            To automatically create workflows, we need your n8n API key.
+            ${isUpdate ? 'Enter your new n8n API key below.' : 'To automatically create workflows, we need your n8n API key.'}
           </p>
         </div>
         
@@ -1101,8 +1390,8 @@ class UIManager {
         to { opacity: 1; transform: scale(1); }
       }
       @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
+        0%, 100% { transform: scale(1); opacity: 0.7; }
+        50% { transform: scale(1.05); opacity: 1; }
       }
       @keyframes highlight {
         0%, 100% { box-shadow: 0 0 0 0 rgba(62, 207, 142, 0.7); }
@@ -1113,7 +1402,6 @@ class UIManager {
 
     document.body.appendChild(modalOverlay);
     this.setupApiKeyModalListeners(modalOverlay);
-    console.log('🎉 API key modal created and added to DOM');
   }
 
   highlightProfileIcon() {
@@ -1152,7 +1440,6 @@ class UIManager {
       
       window.n9nHighlightedElement = profileIcon;
     } else {
-      console.log('👤 Profile icon not found for highlighting');
     }
   }
 
@@ -1208,7 +1495,6 @@ class UIManager {
   }
 
   showNotification(message, type = 'info') {
-    console.log(`📢 ${type.toUpperCase()}: ${message}`);
     
     // Create notification element
     const notification = document.createElement('div');
