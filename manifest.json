@@ -1,0 +1,57 @@
+{
+  "manifest_version": 3,
+  "name": "n9n AI Copilot",
+  "version": "1.0.4",
+  "description": "AI-powered workflow copilot for n8n - build workflows through natural language conversations",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "identity",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://*.n8n.cloud/*",
+    "*://localhost:*/*",
+    "*://127.0.0.1:*/*",
+    "*://100.78.164.43:*/*",
+    "*://*.supabase.co/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.n8n.cloud/*",
+        "*://localhost:*/*",
+        "*://127.0.0.1:*/*",
+        "*://100.78.164.43:*/*"
+      ],
+      "js": ["content-script-consolidated.js"],
+      "css": ["content-styles.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "assets/n9n.png",
+    "32": "assets/n9n.png",
+    "48": "assets/n9n.png",
+    "128": "assets/n9n.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/void.png"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "n9n AI Copilot",
+    "default_icon": {
+      "16": "assets/n9n.png",
+      "32": "assets/n9n.png",
+      "48": "assets/n9n.png",
+      "128": "assets/n9n.png"
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "n9n AI Copilot",
+  "version": "1.0.4",
+  "description": "AI-powered workflow copilot for n8n - build workflows through natural language conversations",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "identity",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://*.n8n.cloud/*",
+    "*://localhost:*/*",
+    "*://127.0.0.1:*/*",
+    "*://100.78.164.43:*/*",
+    "*://*.supabase.co/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.n8n.cloud/*",
+        "*://localhost:*/*",
+        "*://127.0.0.1:*/*",
+        "*://100.78.164.43:*/*"
+      ],
+      "js": ["content-script-refactored.js"],
+      "css": ["content-styles.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "modules/*.js"
+      ],
+      "matches": [
+        "*://*.n8n.cloud/*",
+        "*://localhost:*/*",
+        "*://127.0.0.1:*/*",
+        "*://100.78.164.43:*/*"
+      ]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "n9n AI Copilot"
+  }
+}

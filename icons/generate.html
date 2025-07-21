@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+</head>
+<body>
+    <canvas id="canvas16" width="16" height="16" style="border: 1px solid #ccc; margin: 5px;"></canvas>
+    <canvas id="canvas32" width="32" height="32" style="border: 1px solid #ccc; margin: 5px;"></canvas>
+    <canvas id="canvas48" width="48" height="48" style="border: 1px solid #ccc; margin: 5px;"></canvas>
+    <canvas id="canvas128" width="128" height="128" style="border: 1px solid #ccc; margin: 5px;"></canvas>
+    
+    <script>
+        function createIcon(size) {
+            const canvas = document.getElementById(`canvas${size}`);
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#6366f1');
+            gradient.addColorStop(1, '#8b5cf6');
+            
+            // Draw background circle
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size/2 - 1, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Draw n8n-style logo
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = Math.max(1, size / 16);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            const center = size / 2;
+            const nodeSize = size / 8;
+            const spacing = size / 4;
+            
+            // Draw three interconnected nodes
+            // Top node
+            ctx.beginPath();
+            ctx.arc(center, center - spacing/2, nodeSize, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Bottom left node
+            ctx.beginPath();
+            ctx.arc(center - spacing/2, center + spacing/2, nodeSize, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Bottom right node
+            ctx.beginPath();
+            ctx.arc(center + spacing/2, center + spacing/2, nodeSize, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Draw connections
+            ctx.beginPath();
+            ctx.moveTo(center, center - spacing/2 + nodeSize);
+            ctx.lineTo(center - spacing/2, center + spacing/2 - nodeSize);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(center, center - spacing/2 + nodeSize);
+            ctx.lineTo(center + spacing/2, center + spacing/2 - nodeSize);
+            ctx.stroke();
+            
+            // Download the image
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `icon${size}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+        
+        // Generate all icons
+        setTimeout(() => {
+            createIcon(16);
+            setTimeout(() => createIcon(32), 100);
+            setTimeout(() => createIcon(48), 200);
+            setTimeout(() => createIcon(128), 300);
+        }, 1000);
+    </script>
+</body>
+</html>

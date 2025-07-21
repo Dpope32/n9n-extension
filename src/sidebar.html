@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>n9n AI Copilot Sidebar</title>
+    <link rel="stylesheet" href="styles/chat-panel.css">
+    <link rel="stylesheet" href="styles/sidebar.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(145deg, #0f0f0f 0%, #1a1a1a 100%);
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .sidebar-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .sidebar-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #2a2a2a;
+            background: rgba(255, 255, 255, 0.02);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .sidebar-logo svg {
+            color: #6366f1;
+        }
+        
+        .sidebar-close {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .sidebar-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .loading-spinner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            flex-direction: column;
+            gap: 16px;
+            color: #9ca3af;
+        }
+        
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 2px solid #2a2a2a;
+            border-top: 2px solid #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            flex-direction: column;
+            gap: 16px;
+            color: #ef4444;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .error-icon {
+            font-size: 48px;
+            color: #ef4444;
+        }
+        
+        .retry-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .retry-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar-container">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                    <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                    <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+                <span>n9n AI Copilot</span>
+            </div>
+            <button class="sidebar-close" id="close-sidebar" title="Close Sidebar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="sidebar-content" id="sidebar-content">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Loading AI Copilot...</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ChatPanel } from './components/ChatPanel.js';
+        
+        class SidebarManager {
+            constructor() {
+                this.chatPanel = null;
+                this.isLoading = true;
+                this.init();
+            }
+            
+            async init() {
+                try {
+                    await this.initializeChatPanel();
+                    this.setupEventListeners();
+                } catch (error) {
+                    this.showError(error);
+                }
+            }
+            
+            async initializeChatPanel() {
+                const contentElement = document.getElementById('sidebar-content');
+                
+                try {
+                    // Clear loading state
+                    contentElement.innerHTML = '<div id="chat-panel-container"></div>';
+                    
+                    // Initialize chat panel
+                    const container = document.getElementById('chat-panel-container');
+                    this.chatPanel = new ChatPanel(container);
+                    
+                    this.isLoading = false;
+                } catch (error) {
+                    console.error('Failed to initialize chat panel:', error);
+                    throw error;
+                }
+            }
+            
+            setupEventListeners() {
+                // Close button
+                document.getElementById('close-sidebar').addEventListener('click', () => {
+                    this.closeSidebar();
+                });
+                
+                // Listen for messages from parent window
+                window.addEventListener('message', (event) => {
+                    if (event.data.type === 'CLOSE_SIDEBAR') {
+                        this.closeSidebar();
+                    }
+                });
+                
+                // Handle escape key
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        this.closeSidebar();
+                    }
+                });
+            }
+            
+            closeSidebar() {
+                // Send message to parent window or extension
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'CLOSE_SIDEBAR' }, '*');
+                } else {
+                    // Send message to content script
+                    chrome.runtime.sendMessage({ type: 'TOGGLE_COPILOT' });
+                }
+            }
+            
+            showError(error) {
+                const contentElement = document.getElementById('sidebar-content');
+                contentElement.innerHTML = `
+                    <div class="error-state">
+                        <div class="error-icon">⚠️</div>
+                        <h3>Failed to Load</h3>
+                        <p>Something went wrong while loading the AI Copilot.</p>
+                        <p class="error-details">${error.message || 'Unknown error'}</p>
+                        <button class="retry-btn" onclick="location.reload()">
+                            Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Initialize sidebar manager
+        new SidebarManager();
+    </script>
+</body>
+</html>
