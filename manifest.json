@@ -45,7 +45,7 @@
     }
   ],
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "components/panel/popup.html",
     "default_title": "n9n AI Copilot",
     "default_icon": {
       "16": "assets/n9n.png",
