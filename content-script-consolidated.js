@@ -13,7 +13,7 @@ window.UIService = class UIService {
     return `
       <div class="n9n-header">
         <div class="n9n-logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
             <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
             <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
@@ -775,7 +775,292 @@ window.ChatPanel = class ChatPanel {
   }
 
   showApiKeyModal() {
-    alert('Settings modal - simplified for now. API key management coming soon!');
+    // Remove any existing modal
+    this.removeApiKeyModal();
+    
+    // Create modal overlay
+    const modalOverlay = document.createElement('div');
+    modalOverlay.id = 'n9n-api-modal-overlay';
+    modalOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    `;
+    
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+      background: linear-gradient(145deg, #1a1a1a 0%, #2a2a2a 100%);
+      border: 1px solid #404040;
+      border-radius: 16px;
+      padding: 0;
+      width: 480px;
+      max-width: 90vw;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+      overflow: hidden;
+    `;
+    
+    modalContent.innerHTML = `
+      <div style="padding: 24px; border-bottom: 1px solid #404040;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <h2 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 600;">API Settings</h2>
+          <button id="n9n-modal-close" style="background: none; border: none; color: #9ca3af; cursor: pointer; padding: 4px; border-radius: 4px; transition: all 0.2s;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <p style="margin: 0; color: #9ca3af; font-size: 14px; line-height: 1.5;">
+          Configure your n8n API key to enable automatic workflow injection and advanced features.
+        </p>
+      </div>
+      
+      <div style="padding: 24px;">
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; color: #ffffff; font-size: 14px; font-weight: 500; margin-bottom: 8px;">
+            n8n API Key
+          </label>
+          <input 
+            type="password" 
+            id="n9n-api-key-input"
+            placeholder="Enter your n8n API key..."
+            style="
+              width: 100%;
+              background: rgba(255, 255, 255, 0.05);
+              border: 1px solid #404040;
+              border-radius: 8px;
+              padding: 12px 16px;
+              color: #ffffff;
+              font-size: 14px;
+              outline: none;
+              transition: all 0.2s;
+              box-sizing: border-box;
+            "
+          />
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+            <input type="checkbox" id="n9n-show-key" style="margin: 0;">
+            <label for="n9n-show-key" style="color: #9ca3af; font-size: 12px; cursor: pointer;">
+              Show API key
+            </label>
+          </div>
+        </div>
+        
+        <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; margin-top: 2px;">
+              <circle cx="12" cy="12" r="10" stroke="#3b82f6" stroke-width="2"/>
+              <path d="M12 16v-4M12 8h.01" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div>
+              <h4 style="margin: 0 0 4px 0; color: #3b82f6; font-size: 13px; font-weight: 600;">How to get your API key:</h4>
+              <ol style="margin: 0; padding-left: 16px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
+                <li>Go to your n8n instance Settings</li>
+                <li>Navigate to "n8n API" section</li>
+                <li>Create a new API key</li>
+                <li>Copy and paste it here</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="padding: 20px 24px; background: rgba(255, 255, 255, 0.02); border-top: 1px solid #404040; display: flex; gap: 12px; justify-content: flex-end;">
+        <button id="n9n-modal-cancel" style="
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid #404040;
+          border-radius: 8px;
+          padding: 10px 20px;
+          color: #9ca3af;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        ">Cancel</button>
+        <button id="n9n-modal-save" style="
+          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+          border: none;
+          border-radius: 8px;
+          padding: 10px 20px;
+          color: #ffffff;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        ">Save API Key</button>
+      </div>
+    `;
+    
+    modalOverlay.appendChild(modalContent);
+    document.body.appendChild(modalOverlay);
+    
+    // Animate modal in
+    requestAnimationFrame(() => {
+      modalOverlay.style.opacity = '1';
+      modalContent.style.transform = 'scale(1)';
+    });
+    
+    // Load existing API key
+    this.loadApiKeyToModal();
+    
+    // Setup event listeners
+    this.setupModalEventListeners(modalOverlay);
+    
+    // Focus on input
+    setTimeout(() => {
+      const input = document.getElementById('n9n-api-key-input');
+      if (input) input.focus();
+    }, 100);
+  }
+  
+  removeApiKeyModal() {
+    const existingModal = document.getElementById('n9n-api-modal-overlay');
+    if (existingModal) {
+      existingModal.remove();
+    }
+  }
+  
+  loadApiKeyToModal() {
+    const input = document.getElementById('n9n-api-key-input');
+    if (input) {
+      // Load existing key
+      if (chrome && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get(['n8n_api_key'], (result) => {
+          if (result.n8n_api_key) {
+            input.value = result.n8n_api_key;
+          } else {
+            const localKey = localStorage.getItem('n8n_api_key');
+            if (localKey) input.value = localKey;
+          }
+        });
+      } else {
+        const localKey = localStorage.getItem('n8n_api_key');
+        if (localKey) input.value = localKey;
+      }
+    }
+  }
+  
+  setupModalEventListeners(modalOverlay) {
+    const closeBtn = document.getElementById('n9n-modal-close');
+    const cancelBtn = document.getElementById('n9n-modal-cancel');
+    const saveBtn = document.getElementById('n9n-modal-save');
+    const showKeyCheckbox = document.getElementById('n9n-show-key');
+    const apiKeyInput = document.getElementById('n9n-api-key-input');
+    
+    // Close modal handlers
+    const closeModal = () => {
+      modalOverlay.style.opacity = '0';
+      const modalContent = modalOverlay.querySelector('div');
+      if (modalContent) modalContent.style.transform = 'scale(0.9)';
+      setTimeout(() => this.removeApiKeyModal(), 300);
+    };
+    
+    closeBtn?.addEventListener('click', closeModal);
+    cancelBtn?.addEventListener('click', closeModal);
+    
+    // Click outside to close
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+    
+    // Escape key to close
+    const handleKeydown = (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+        document.removeEventListener('keydown', handleKeydown);
+      }
+    };
+    document.addEventListener('keydown', handleKeydown);
+    
+    // Show/hide password
+    showKeyCheckbox?.addEventListener('change', (e) => {
+      if (apiKeyInput) {
+        apiKeyInput.type = e.target.checked ? 'text' : 'password';
+      }
+    });
+    
+    // Save API key
+    saveBtn?.addEventListener('click', () => {
+      const apiKey = apiKeyInput?.value?.trim();
+      if (apiKey) {
+        // Validate API key format
+        if (this.validateApiKey(apiKey)) {
+          // Save to both localStorage and chrome storage
+          localStorage.setItem('n8n_api_key', apiKey);
+          if (chrome && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.set({ 'n8n_api_key': apiKey });
+          }
+          
+          this.uiService.showNotification('✅ API Key saved successfully!', 'success');
+          closeModal();
+        } else {
+          this.uiService.showNotification('❌ Invalid API key format. Please check your key.', 'error');
+        }
+      } else {
+        // Clear API key
+        localStorage.removeItem('n8n_api_key');
+        if (chrome && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.remove(['n8n_api_key']);
+        }
+        this.uiService.showNotification('🗑️ API Key cleared.', 'success');
+        closeModal();
+      }
+    });
+    
+    // Add hover effects
+    [closeBtn, cancelBtn, saveBtn].forEach(btn => {
+      if (btn) {
+        btn.addEventListener('mouseenter', () => {
+          if (btn === closeBtn) {
+            btn.style.background = 'rgba(255, 255, 255, 0.1)';
+            btn.style.color = '#ffffff';
+          } else if (btn === cancelBtn) {
+            btn.style.background = 'rgba(255, 255, 255, 0.1)';
+            btn.style.color = '#ffffff';
+          } else if (btn === saveBtn) {
+            btn.style.transform = 'translateY(-1px)';
+            btn.style.boxShadow = '0 8px 20px rgba(99, 102, 241, 0.3)';
+          }
+        });
+        
+        btn.addEventListener('mouseleave', () => {
+          if (btn === closeBtn) {
+            btn.style.background = 'none';
+            btn.style.color = '#9ca3af';
+          } else if (btn === cancelBtn) {
+            btn.style.background = 'rgba(255, 255, 255, 0.05)';
+            btn.style.color = '#9ca3af';
+          } else if (btn === saveBtn) {
+            btn.style.transform = 'translateY(0)';
+            btn.style.boxShadow = 'none';
+          }
+        });
+      }
+    });
+    
+    // Input focus effects
+    if (apiKeyInput) {
+      apiKeyInput.addEventListener('focus', () => {
+        apiKeyInput.style.borderColor = '#6366f1';
+        apiKeyInput.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+      });
+      
+      apiKeyInput.addEventListener('blur', () => {
+        apiKeyInput.style.borderColor = '#404040';
+        apiKeyInput.style.boxShadow = 'none';
+      });
+    }
   }
 
   startNewChat() {
@@ -790,13 +1075,6 @@ window.ChatPanel = class ChatPanel {
       const input = this.container.querySelector('#chat-input');
       if (input) input.focus();
     }, 100);
-  }
-
-  startNewChat() {
-    // Clear current conversation
-    this.chatService.clearHistory();
-    // Re-render to show empty state
-    this.render();
   }
 
   async injectWorkflow(messageId) {
@@ -1527,7 +1805,9 @@ window.ChatPanel = class ChatPanel {
   transform: translateX(0);
 }
 
-.n9n-hamburger:hover {
+.n9n-hamburger:hover,
+.n9n-settings-btn:hover,
+.n9n-new-chat-btn:hover {
   background: rgba(255, 255, 255, 0.1) !important;
   color: #ffffff !important;
 }
@@ -1561,7 +1841,6 @@ window.ChatPanel = class ChatPanel {
     `;
     
     document.head.appendChild(style);
-    console.log('✅ n9n styles loaded successfully (embedded)');
   }
 };
 
@@ -1609,14 +1888,12 @@ class N9NCopilot {
       await this.createSidebar();
       this.setupMessageListener();
       this.setupKeyboardShortcuts();
-      console.log('🚀 n9n AI Copilot initialized');
       
       // Check if sidebar should auto-open
       const shouldAutoOpen = localStorage.getItem('n9n_sidebar_was_open') === 'true' || 
                            localStorage.getItem('n9n_auto_open_sidebar') === 'true';
       
       if (shouldAutoOpen) {
-        console.log('🤖 Auto-opening sidebar based on previous state');
         setTimeout(() => {
           this.toggleSidebar();
           // Clean up the flags
@@ -1741,7 +2018,6 @@ class N9NCopilot {
     });
     
     document.body.appendChild(toggleButton);
-    console.log('✅ Toggle button created');
   }
 
     checkForWorkflowToInject() {
@@ -1858,4 +2134,4 @@ class N9NCopilot {
 // Initialize
 const copilot = new N9NCopilot();
 window.n9nCopilot = copilot;
-console.log('🚀 n9n AI Copilot loaded successfully (fixed version with 320px width and single suggestion)');
+console.log('🚀 n9n AI Copilot loaded successful  ly (fixed version with 320px width and single suggestion)');
