@@ -128,7 +128,7 @@ window.UIService = class UIService {
             maxlength="2000"
           ></textarea>
           <button class="n9n-send-btn" id="send-btn" data-action="send-message" disabled>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
               <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -634,7 +634,7 @@ window.ChatPanel = class ChatPanel {
     const messages = this.chatService ? this.chatService.getMessages() : [];
     
     this.container.innerHTML = `
-      <div class="n9n-chat-panel" style="width: 320px;">
+      <div class="n9n-chat-panel" style="width: 100%; height: 100%;">
         ${this.uiService.renderHeader(this.state.isAuthenticated, this.state.user)}
         ${this.state.isAuthenticated ? 
           this.uiService.renderChat(messages) : 
@@ -1397,16 +1397,14 @@ window.ChatPanel = class ChatPanel {
     style.textContent = `
 /* n9n AI Copilot Chat Panel Styles */
 .n9n-chat-panel {
-  width: 320px;
-  height: 750px;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(145deg, #0f0f0f 0%, #1a1a1a 100%);
-  border-radius: 16px;
-  border: 1px solid #2a2a2a;
+  border: none;
+  border-radius: 0;
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(20px);
   overflow: hidden;
 }
 
@@ -1690,19 +1688,19 @@ window.ChatPanel = class ChatPanel {
 .n9n-input-container {
   display: flex;
   align-items: flex-end;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 8px;
+  padding: 8px 12px;
 }
 
 .n9n-input-container textarea {
   flex: 1;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid #3a3a3a;
-  border-radius: 12px;
-  padding: 12px 16px;
+  border-radius: 8px;
+  padding: 8px 12px;
   color: #ffffff;
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: 13px;
+  line-height: 1.3;
   resize: none;
   outline: none;
   transition: all 0.2s;
@@ -1728,9 +1726,9 @@ window.ChatPanel = class ChatPanel {
 .n9n-send-btn {
   background: #6366f1;
   border: none;
-  border-radius: 10px;
-  width: 40px;
-  height: 40px;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
