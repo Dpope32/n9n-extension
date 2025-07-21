@@ -7,6 +7,9 @@ class N9NCopilot {
     this.sidebar = null;
     this.isVisible = false;
     
+    // Assign to global scope immediately so ChatPanel can access it
+    window.n9nCopilot = this;
+    
     if (this.isN8NPage) {
       this.init();
     }
@@ -64,44 +67,12 @@ class N9NCopilot {
   }
 
   async createSidebar() {
-    // Remove existing sidebar if any
-    const existingSidebar = document.getElementById('n9n-copilot-sidebar');
-    if (existingSidebar) {
-      existingSidebar.remove();
-    }
-
-    // Remove existing toggle if any
-    const existingToggle = document.getElementById('n9n-copilot-toggle');
-    if (existingToggle) {
-      existingToggle.remove();
-    }
-
-    // Create toggle button
+    console.log('🏗️ Creating sidebar with UIManager');
+    
+    // Create toggle button first
     this.createToggleButton();
 
-    // Create sidebar container - RIGHT SIDE DRAWER (FULL HEIGHT)
-    this.sidebar = document.createElement('div');
-    this.sidebar.id = 'n9n-copilot-sidebar';
-    this.sidebar.style.cssText = `
-      position: fixed;
-      top: 0;
-      right: 0;
-      width: 350px;
-      height: 100vh;
-      background: #1a1a1a;
-      border-left: 1px solid #2a2a2a;
-      z-index: 999999;
-      transform: translateX(100%);
-      transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      overflow: hidden;
-      box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
-      display: flex;
-      flex-direction: column;
-    `;
-
-    document.body.appendChild(this.sidebar);
-
-    // Create subtle overlay for when drawer is open (optional)
+    // Create subtle overlay for when drawer is open
     this.overlay = document.createElement('div');
     this.overlay.id = 'n9n-drawer-overlay';
     this.overlay.style.cssText = `
@@ -119,11 +90,21 @@ class N9NCopilot {
     `;
     document.body.appendChild(this.overlay);
 
-    // Initialize chat panel
-    this.chatPanel = new window.ChatPanel(this.sidebar);
+    // Initialize UI manager  
+    this.uiManager = new window.UIManager();
+    this.sidebar = this.uiManager.createSidebar();
+    console.log('✅ Sidebar created successfully');
   }
 
   createToggleButton() {
+    console.log('🔘 Creating toggle button');
+    
+    // Remove existing toggle if any
+    const existingToggle = document.getElementById('n9n-copilot-toggle');
+    if (existingToggle) {
+      existingToggle.remove();
+    }
+    
     const toggleButton = document.createElement('button');
     toggleButton.id = 'n9n-copilot-toggle';
     toggleButton.innerHTML = `
@@ -168,10 +149,12 @@ class N9NCopilot {
     
     // Click handler
     toggleButton.addEventListener('click', () => {
+      console.log('🖱️ Toggle button clicked');
       this.toggleSidebar();
     });
     
     document.body.appendChild(toggleButton);
+    console.log('✅ Toggle button created');
   }
 
     checkForWorkflowToInject() {
@@ -217,12 +200,15 @@ class N9NCopilot {
   }
 
   toggleSidebar() {
-    if (!this.sidebar) return;
+    console.log('🔄 Toggling sidebar from N9NCopilot');
+    if (!this.uiManager) {
+      console.log('❌ No UIManager available');
+      return;
+    }
 
-    this.isVisible = !this.isVisible;
-    
-    // Animate sidebar slide
-    this.sidebar.style.transform = this.isVisible ? 'translateX(0%)' : 'translateX(100%)';
+    this.uiManager.toggleSidebar();
+    this.isVisible = this.uiManager.getIsVisible();
+    console.log('✅ Sidebar visibility:', this.isVisible);
     
     // Show/hide overlay
     if (this.overlay) {
@@ -287,6 +273,3 @@ class N9NCopilot {
 
 // Initialize
 const copilot = new N9NCopilot();
-window.n9nCopilot = copilot;
-
-console.log('n9n AI Copilot loaded successfully');

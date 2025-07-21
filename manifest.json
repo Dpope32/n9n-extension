@@ -25,9 +25,10 @@
         "*://100.78.164.43:*/*"
       ],
       "js": [
+        "modules/Utils.js",
+        "modules/UIManager.js",
         "src/services/ChatService.js",
         "src/services/UIService.js",
-        "components/ChatPanel.js",
         "content-script-consolidated.js"
       ],
       "css": ["content-styles.css"],

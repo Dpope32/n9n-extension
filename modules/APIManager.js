@@ -352,7 +352,7 @@ class APIManager {
           
           <!-- Visual indicator -->
           <div style="
-            background: linear-gradient(45deg, #3ecf8e, #2dd4bf);
+            background: linear-gradient(45deg,rgb(10, 10, 10), #2dd4bf);
             border-radius: 8px;
             padding: 12px;
             text-align: center;
@@ -432,8 +432,8 @@ class APIManager {
           ">Cancel</button>
           <button id="save-api-key" style="
             padding: 10px 20px;
-            background: #3ecf8e;
-            border: 1px solid #2dd4bf;
+            background: rgb(45, 131, 212);
+            border: 1px solidrgb(45, 131, 212);
             border-radius: 6px;
             color: #ffffff;
             font-size: 14px;

@@ -3,6 +3,17 @@
 
 console.log('n9n AI Copilot background service worker loaded');
 
+// Detection function for n8n pages
+const isN8nPage = (tab) => {
+  if (!tab || !tab.url) return false;
+  return (
+    tab.url.includes('n8n.cloud') ||
+    tab.url.includes('localhost') ||
+    tab.url.includes('127.0.0.1') ||
+    tab.url.includes('100.78.164.43')
+  );
+};
+
 chrome.runtime.onInstalled.addListener((details) => {
   console.log(' n9n AI Copilot installed:', details.reason);
   
@@ -72,8 +83,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Handle tab updates to inject content script if needed
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
-    const isN8nPage = isN8nPage(tab);
-    if (isN8nPage) console.log('n8n page detected:', tab.url);
+    const pageIsN8n = isN8nPage(tab);
+    if (pageIsN8n) console.log('n8n page detected:', tab.url);
   }
 });
 
