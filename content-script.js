@@ -148,6 +148,8 @@ class N9NCopilot {
       display: none;
       flex-direction: column;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+      box-sizing: border-box;
     `;
     
     // Add the complete chat interface with proper dark theme
@@ -155,19 +157,25 @@ class N9NCopilot {
       <div style="
         display: flex;
         flex-direction: column;
-        height: 100%;
+        height: 100vh;
+        width: 100%;
         background: linear-gradient(145deg, #1f1f1f 0%, #2a2a2a 100%);
         color: #ffffff;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       ">
         <!-- Header with HAMBURGER icon -->
         <div style="
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 16px 20px;
+          padding: 16px;
           background: #2a2a2a;
           border-bottom: 1px solid #404040;
           min-height: 60px;
+          flex-shrink: 0;
+          box-sizing: border-box;
         ">
           <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 16px;">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="color: #ffffff;">
@@ -184,10 +192,12 @@ class N9NCopilot {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 8px 16px;
+          padding: 8px 12px;
           background: #252525;
           border-bottom: 1px solid #404040;
           min-height: 18px;
+          flex-shrink: 0;
+          box-sizing: border-box;
         ">
           <div style="display: flex; align-items: center; gap: 8px;">
             <!-- Current Conversation Pill -->
@@ -269,23 +279,28 @@ class N9NCopilot {
         <div id="messages-container" style="
           flex: 1;
           overflow-y: auto;
-          padding: 12px 16px;
+          padding: 12px;
           display: flex;
           flex-direction: column;
           gap: 12px;
           background: #1f1f1f;
+          box-sizing: border-box;
+          min-height: 0;
         "></div>
         
         <!-- Input Area - SCROLLBAR COMPLETELY REMOVED -->
         <div style="
           border-top: 1px solid #404040;
           background: #2a2a2a;
+          flex-shrink: 0;
+          box-sizing: border-box;
         ">
           <div style="
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px 16px;
+            padding: 12px;
+            box-sizing: border-box;
           ">
             <input 
               id="chat-input"
@@ -332,9 +347,10 @@ class N9NCopilot {
           <div style="
             display: flex;
             gap: 4px;
-            padding: 0 16px 6px;
+            padding: 0 12px 6px;
             flex-wrap: nowrap;
             overflow-x: auto;
+            box-sizing: border-box;
           ">
             <button class="suggestion-btn" data-text="Create a workflow that sends daily email reports" style="
               background: #404040;
@@ -367,9 +383,10 @@ class N9NCopilot {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 16px 12px;
+            padding: 8px 12px 12px;
             border-top: 1px solid #404040;
             background: #2a2a2a;
+            box-sizing: border-box;
           ">
             <div style="
               display: flex;
@@ -655,7 +672,8 @@ class N9NCopilot {
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 12px 16px;
+            padding: 12px;
+            box-sizing: border-box;
           ">
             <div style="
               margin-bottom: 12px;
@@ -715,7 +733,8 @@ class N9NCopilot {
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 24px 16px;
+            padding: 24px 12px;
+            box-sizing: border-box;
           ">
             <h3 style="margin: 0 0 6px 0; font-size: 16px; font-weight: 600; color: #ffffff;">Ready to build & modify workflows?</h3>
             <p style="margin: 0; color: #a0a0a0; font-size: 13px; line-height: 1.4;">

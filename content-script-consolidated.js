@@ -20,11 +20,24 @@ window.UIService = class UIService {
           </svg>
           <span>n9n AI Copilot</span>
         </div>
-        <button class="n9n-hamburger" data-action="close-panel" style="background: none; border: none; color: #9ca3af; cursor: pointer; padding: 8px; border-radius: 4px; transition: all 0.2s;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
+        <div style="display: flex; gap: 2px;">
+          <button class="n9n-new-chat-btn" data-action="new-chat" title="New Chat" style="background: none; border: none; color: #9ca3af; cursor: pointer; padding: 6px; border-radius: 4px; transition: all 0.2s;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button class="n9n-settings-btn" data-action="open-settings" title="API Settings" style="background: none; border: none; color: #9ca3af; cursor: pointer; padding: 6px; border-radius: 4px; transition: all 0.2s;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+          <button class="n9n-hamburger" data-action="close-panel" style="background: none; border: none; color: #9ca3af; cursor: pointer; padding: 6px; border-radius: 4px; transition: all 0.2s;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
     `;
   }
@@ -127,12 +140,44 @@ window.UIService = class UIService {
 
   // Helper methods
   formatMessageContent(content) {
+    // Handle JSON code blocks specially
+    content = content.replace(/```json\n([\s\S]*?)\n```/g, (match, jsonContent) => {
+      try {
+        // Parse and prettify the JSON
+        const parsed = JSON.parse(jsonContent);
+        const lines = JSON.stringify(parsed, null, 2).split('\n');
+        
+        // Show only first 5 lines if it's long
+        let displayContent;
+        if (lines.length > 8) {
+          displayContent = lines.slice(0, 5).join('\n') + '\n  ...\n}';
+        } else {
+          displayContent = lines.join('\n');
+        }
+        
+        return `<div class="n9n-code-block">
+          <pre><code>${this.escapeHtml(displayContent)}</code></pre>
+        </div>`;
+      } catch (e) {
+        // If JSON parsing fails, show as-is
+        return `<div class="n9n-code-block">
+          <pre><code>${this.escapeHtml(jsonContent)}</code></pre>
+        </div>`;
+      }
+    });
+    
+    // Handle other formatting
     return content
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/`(.*?)`/g, '<code>$1</code>')
-      .replace(/```json\n([\s\S]*?)\n```/g, '<pre><code>$1</code></pre>')
       .replace(/\n/g, '<br>');
+  }
+  
+  escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 
   getTimeAgo(timestamp) {
@@ -207,7 +252,9 @@ window.UIService = class UIService {
 // ============================================================================
 window.ChatService = class ChatService {
   constructor() {
-    this.messages = [];
+    // Load messages from localStorage if available
+    const savedMessages = localStorage.getItem('n9n_chat_messages');
+    this.messages = savedMessages ? JSON.parse(savedMessages) : [];
     this.currentConversationId = null;
   }
 
@@ -235,41 +282,62 @@ window.ChatService = class ChatService {
     };
 
     this.messages.push(userMessage);
+    
+    // Save messages to localStorage after user message
+    localStorage.setItem('n9n_chat_messages', JSON.stringify(this.messages));
 
     // Generate AI response with actual workflow JSON
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Generate workflow based on user request
     const workflow = this.generateWorkflow(content);
+    const currentWorkflow = this.getCurrentWorkflowContext();
+    
+    // Create context-aware response
+    let contextText = '';
+    if (currentWorkflow && currentWorkflow.hasNodes) {
+      contextText = `I can see you're working on "${currentWorkflow.name}" which has ${currentWorkflow.nodeCount} nodes. `;
+    } else if (currentWorkflow && currentWorkflow.isEmptyWorkflow) {
+      contextText = `I can see you have an empty workflow ready. `;
+    }
     
     const aiResponse = {
       id: (Date.now() + 1).toString(),
       role: 'assistant', 
-      content: `I'll help you create that workflow! Here's a custom n8n workflow for: "${content}"
+      content: `${contextText}Here's your custom n8n workflow:
 
 \`\`\`json
 ${JSON.stringify(workflow, null, 2)}
 \`\`\`
 
-**Workflow Name:** ${workflow.name}  
-Click **⚡ Inject** to add this workflow directly to your n8n instance!`,
+**${workflow.name}** is ready to use! Click **⚡ Inject** to add this workflow to your n8n instance.`,
       timestamp: new Date().toISOString()
     };
 
     this.messages.push(aiResponse);
+    
+    // Save messages to localStorage after each AI response
+    localStorage.setItem('n9n_chat_messages', JSON.stringify(this.messages));
   }
 
   async startNewConversation() {
     this.messages = [];
     this.currentConversationId = Date.now().toString();
+    localStorage.removeItem('n9n_chat_messages');
   }
 
   async clearHistory() {
     this.messages = [];
+    localStorage.removeItem('n9n_chat_messages');
   }
+
+
 
   generateWorkflow(userMessage) {
     const message = userMessage.toLowerCase();
+    
+    // Get current workflow context
+    const currentWorkflow = this.getCurrentWorkflowContext();
     
     // Extract workflow name if specified
     let workflowName = 'AI Generated Workflow';
@@ -280,7 +348,12 @@ Click **⚡ Inject** to add this workflow directly to your n8n instance!`,
       }
     }
     
-    // Generate appropriate workflow based on request
+    // If user is asking to modify/extend existing workflow
+    if (currentWorkflow && (message.includes('add') || message.includes('modify') || message.includes('extend') || message.includes('update'))) {
+      return this.modifyExistingWorkflow(currentWorkflow, userMessage, workflowName);
+    }
+    
+    // Generate new workflow based on request
     if (message.includes('simple') || message.includes('basic')) {
       return this.createSimpleWorkflow(workflowName);
     } else if (message.includes('email')) {
@@ -291,6 +364,56 @@ Click **⚡ Inject** to add this workflow directly to your n8n instance!`,
       return this.createScheduledWorkflow(workflowName);
     } else {
       return this.createSimpleWorkflow(workflowName);
+    }
+  }
+  
+  getCurrentWorkflowContext() {
+    try {
+      // Try to detect current workflow from n8n interface
+      const workflowCanvas = document.querySelector('[data-test-id="workflow-canvas"]') || 
+                           document.querySelector('.workflow-canvas') ||
+                           document.querySelector('#workflow-canvas');
+      
+      if (workflowCanvas) {
+        // Try to get workflow name from title or heading
+        const titleElement = document.querySelector('h1') || 
+                            document.querySelector('[data-test-id="workflow-name"]') ||
+                            document.querySelector('.workflow-title');
+        
+        const workflowName = titleElement ? titleElement.textContent.trim() : 'Current Workflow';
+        
+        // Try to detect existing nodes (very basic detection)
+        const nodeElements = document.querySelectorAll('[data-test-id*="node"]') || [];
+        
+        return {
+          name: workflowName,
+          hasNodes: nodeElements.length > 0,
+          nodeCount: nodeElements.length,
+          isEmptyWorkflow: nodeElements.length === 0,
+          url: window.location.href
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.log('Failed to get workflow context:', error);
+      return null;
+    }
+  }
+  
+  modifyExistingWorkflow(currentWorkflow, userMessage, workflowName) {
+    const message = userMessage.toLowerCase();
+    const baseName = workflowName || currentWorkflow.name || 'Modified Workflow';
+    
+    if (message.includes('email')) {
+      return this.createEmailWorkflow(`${baseName} - Email Added`);
+    } else if (message.includes('webhook')) {
+      return this.createWebhookWorkflow(`${baseName} - Webhook Added`);
+    } else if (message.includes('schedule')) {
+      return this.createScheduledWorkflow(`${baseName} - Scheduled`);
+    } else {
+      // Add a generic processing node
+      return this.createSimpleWorkflow(`${baseName} - Extended`);
     }
   }
 
@@ -493,13 +616,15 @@ window.ChatPanel = class ChatPanel {
       this.state.isLoading = true;
       
       const user = await this.chatService.initializeChat();
-      if (user) {
-        this.state.isAuthenticated = true;
-        this.state.user = user;
-      }
+      // Always authenticate for seamless chat experience
+      this.state.isAuthenticated = true;
+      this.state.user = user;
     } catch (error) {
       this.state.error = 'Failed to load user state';
       console.error('Load state error:', error);
+      // Even if there's an error, keep it authenticated
+      this.state.isAuthenticated = true;
+      this.state.user = { email: 'user@n9n.com' };
     } finally {
       this.state.isLoading = false;
     }
@@ -517,6 +642,9 @@ window.ChatPanel = class ChatPanel {
         }
       </div>
     `;
+    
+    // Re-setup event listeners after DOM update
+    this.setupEventListeners();
   }
 
   setupEventListeners() {
@@ -546,6 +674,12 @@ window.ChatPanel = class ChatPanel {
         if (window.n9nCopilot) {
           window.n9nCopilot.toggleSidebar();
         }
+        break;
+      case 'open-settings':
+        this.showApiKeyModal();
+        break;
+      case 'new-chat':
+        this.startNewChat();
         break;
     }
   }
@@ -629,8 +763,8 @@ window.ChatPanel = class ChatPanel {
       // Send message via chat service
       await this.chatService.sendMessage(message);
       
-      // Update UI
-      this.updateMessages();
+      // Update UI - re-render the chat
+      this.render();
       
     } catch (error) {
       console.error('Send message error:', error);
@@ -638,6 +772,31 @@ window.ChatPanel = class ChatPanel {
     } finally {
       this.uiService.removeTypingIndicator();
     }
+  }
+
+  showApiKeyModal() {
+    alert('Settings modal - simplified for now. API key management coming soon!');
+  }
+
+  startNewChat() {
+    // Clear current conversation
+    this.chatService.clearHistory();
+    
+    // Re-render to show empty chat
+    this.render();
+    
+    // Focus on input
+    setTimeout(() => {
+      const input = this.container.querySelector('#chat-input');
+      if (input) input.focus();
+    }, 100);
+  }
+
+  startNewChat() {
+    // Clear current conversation
+    this.chatService.clearHistory();
+    // Re-render to show empty state
+    this.render();
   }
 
   async injectWorkflow(messageId) {
@@ -785,7 +944,12 @@ window.ChatPanel = class ChatPanel {
         // Redirect to the new workflow
         if (result.id) {
           console.log('🔀 Redirecting to new workflow:', `${baseUrl}/workflow/${result.id}`);
+          
+          // Store current chat state before redirecting
           localStorage.setItem('n9n_auto_open_sidebar', 'true');
+          localStorage.setItem('n9n_chat_messages', JSON.stringify(this.chatService.getMessages()));
+          localStorage.setItem('n9n_sidebar_was_open', 'true');
+          
           window.location.href = `${baseUrl}/workflow/${result.id}`;
         }
         return true;
@@ -811,10 +975,12 @@ window.ChatPanel = class ChatPanel {
       const baseUrl = this.detectN8nBaseUrl();
       if (!baseUrl) return { success: false, error: 'Could not detect n8n base URL' };
       
-      // Store workflow data for the new page to pick up
+      // Store workflow data and chat state for the new page to pick up
       localStorage.setItem('n9n_workflow_to_inject', JSON.stringify(workflowData));
       localStorage.setItem('n9n_auto_open_sidebar', 'true');
-      console.log('🔧 [REDIRECT] Stored workflow data for injection');
+      localStorage.setItem('n9n_chat_messages', JSON.stringify(this.chatService.getMessages()));
+      localStorage.setItem('n9n_sidebar_was_open', 'true');
+      console.log('🔧 [REDIRECT] Stored workflow data and chat state for injection');
       
       // Navigate to new workflow page
       const newWorkflowUrl = `${baseUrl}/workflow/new`;
@@ -939,9 +1105,8 @@ window.ChatPanel = class ChatPanel {
   }
 
   updateMessages() {
-    const messages = this.chatService.getMessages();
-    this.uiService.updateMessages(messages);
-    this.setupSuggestions(); // Re-setup suggestions after update
+    // This method should trigger a full re-render
+    this.render();
   }
 
   loadStyles() {
@@ -1366,6 +1531,33 @@ window.ChatPanel = class ChatPanel {
   background: rgba(255, 255, 255, 0.1) !important;
   color: #ffffff !important;
 }
+
+/* Code block styles */
+.n9n-code-block {
+  margin: 4px 0;
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.n9n-code-block pre {
+  margin: 0;
+  padding: 8px 10px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.n9n-code-block code {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #e5e7eb;
+  background: transparent;
+  padding: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
     `;
     
     document.head.appendChild(style);
@@ -1418,6 +1610,23 @@ class N9NCopilot {
       this.setupMessageListener();
       this.setupKeyboardShortcuts();
       console.log('🚀 n9n AI Copilot initialized');
+      
+      // Check if sidebar should auto-open
+      const shouldAutoOpen = localStorage.getItem('n9n_sidebar_was_open') === 'true' || 
+                           localStorage.getItem('n9n_auto_open_sidebar') === 'true';
+      
+      if (shouldAutoOpen) {
+        console.log('🤖 Auto-opening sidebar based on previous state');
+        setTimeout(() => {
+          this.toggleSidebar();
+          // Clean up the flags
+          localStorage.removeItem('n9n_auto_open_sidebar');
+          localStorage.removeItem('n9n_sidebar_was_open');
+        }, 500);
+      }
+      
+      // Check if there's a workflow to inject (from redirect method)
+      this.checkForWorkflowToInject();
     } else {
       console.log('Not an n8n page, skipping copilot initialization');
     }
@@ -1439,26 +1648,45 @@ class N9NCopilot {
     // Create toggle button
     this.createToggleButton();
 
-    // Create sidebar container - BOTTOM RIGHT FLOATING
+    // Create sidebar container - RIGHT SIDE DRAWER (FULL HEIGHT)
     this.sidebar = document.createElement('div');
     this.sidebar.id = 'n9n-copilot-sidebar';
     this.sidebar.style.cssText = `
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 320px;
-      height: 750px;
+      top: 0;
+      right: 0;
+      width: 350px;
+      height: 100vh;
       background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      border-radius: 16px;
+      border-left: 1px solid #2a2a2a;
       z-index: 999999;
-      transform: translateY(100%);
-      transition: transform 0.3s ease;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
       overflow: hidden;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
     `;
 
     document.body.appendChild(this.sidebar);
+
+    // Create subtle overlay for when drawer is open (optional)
+    this.overlay = document.createElement('div');
+    this.overlay.id = 'n9n-drawer-overlay';
+    this.overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.1);
+      z-index: 999998;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      pointer-events: none;
+    `;
+    document.body.appendChild(this.overlay);
 
     // Initialize chat panel
     this.chatPanel = new window.ChatPanel(this.sidebar);
@@ -1489,21 +1717,21 @@ class N9NCopilot {
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
       z-index: 999998;
-      transition: all 0.2s ease;
+      transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     `;
     
     // Hover effects
     toggleButton.addEventListener('mouseenter', () => {
       toggleButton.style.transform = 'translateY(-2px)';
-      toggleButton.style.boxShadow = '0 12px 30px rgba(0, 0, 0, 0.4)';
+      toggleButton.style.boxShadow = '-8px 0 30px rgba(0, 0, 0, 0.4)';
       toggleButton.style.background = '#2a2a2a';
     });
     
     toggleButton.addEventListener('mouseleave', () => {
       toggleButton.style.transform = 'translateY(0)';
-      toggleButton.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.3)';
+      toggleButton.style.boxShadow = '-4px 0 20px rgba(0, 0, 0, 0.3)';
       toggleButton.style.background = '#1a1a1a';
     });
     
@@ -1516,11 +1744,68 @@ class N9NCopilot {
     console.log('✅ Toggle button created');
   }
 
+    checkForWorkflowToInject() {
+    const workflowToInject = localStorage.getItem('n9n_workflow_to_inject');
+    if (workflowToInject) {
+      try {
+        const workflowData = JSON.parse(workflowToInject);
+        console.log('Found workflow to inject on page load:', workflowData);
+        
+        // Clear the stored data
+        localStorage.removeItem('n9n_workflow_to_inject');
+        
+        // Wait a bit for the page to load, then show notification
+        setTimeout(() => {
+          const notification = document.createElement('div');
+          notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1a1a1a;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 10000;
+            border: 1px solid #404040;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+          `;
+          notification.textContent = '✅ Workflow ready! Click "Import from URL" in n8n to paste it.';
+          document.body.appendChild(notification);
+          
+          // Copy workflow to clipboard
+          navigator.clipboard.writeText(JSON.stringify(workflowData, null, 2));
+          
+          setTimeout(() => notification.remove(), 5000);
+        }, 1000);
+        
+      } catch (error) {
+        console.error('Failed to parse stored workflow data:', error);
+        localStorage.removeItem('n9n_workflow_to_inject');
+      }
+    }
+  }
+
   toggleSidebar() {
     if (!this.sidebar) return;
-    
+
     this.isVisible = !this.isVisible;
-    this.sidebar.style.transform = this.isVisible ? 'translateY(0%)' : 'translateY(100%)';
+    
+    // Animate sidebar slide
+    this.sidebar.style.transform = this.isVisible ? 'translateX(0%)' : 'translateX(100%)';
+    
+    // Show/hide overlay
+    if (this.overlay) {
+      if (this.isVisible) {
+        this.overlay.style.visibility = 'visible';
+        this.overlay.style.opacity = '1';
+      } else {
+        this.overlay.style.opacity = '0';
+        setTimeout(() => {
+          if (this.overlay) this.overlay.style.visibility = 'hidden';
+        }, 300);
+      }
+    }
   }
 
   setupKeyboardShortcuts() {

@@ -125,6 +125,12 @@
         case 'sign-out':
           await this.signOut();
           break;
+        case 'open-settings':
+          await this.openSettings();
+          break;
+        case 'close-panel':
+          this.closeSidebar();
+          break;
       }
     }
 
@@ -340,6 +346,269 @@
       const messages = this.chatService.getMessages();
       this.uiService.updateMessages(messages);
       this.setupSuggestions(); // Re-setup suggestions after update
+    }
+
+    async openSettings() {
+      try {
+        // Show the API key setup modal with spotlight
+        this.showApiKeyModal();
+      } catch (error) {
+        console.error('Open settings error:', error);
+        this.uiService.showNotification('Failed to open settings', 'error');
+      }
+    }
+
+    closeSidebar() {
+      // Close the sidebar - trigger parent's toggle method
+      if (window.n9nCopilot && window.n9nCopilot.toggleSidebar) {
+        window.n9nCopilot.toggleSidebar();
+      }
+    }
+
+    showApiKeyModal() {
+      // Remove existing modal if any
+      const existingModal = document.querySelector('#n9n-api-key-modal');
+      if (existingModal) existingModal.remove();
+
+      // Highlight the profile icon in n8n if we can find it
+      this.highlightProfileIcon();
+
+      // Create modal overlay
+      const modalOverlay = document.createElement('div');
+      modalOverlay.id = 'n9n-api-key-modal';
+      modalOverlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+      `;
+
+      // Create modal content with spotlight instructions
+      modalOverlay.innerHTML = `
+        <div style="
+          background: #1a1a1a;
+          border: 1px solid #404040;
+          border-radius: 12px;
+          padding: 24px;
+          max-width: 500px;
+          width: 90%;
+          color: #ffffff;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          position: relative;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        ">
+          <button id="close-api-modal" style="
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 20px;
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">×</button>
+          
+          <div style="margin-bottom: 20px;">
+            <h3 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #ffffff;">🔑 n8n API Key Required</h3>
+            <p style="margin: 0; color: #a0a0a0; font-size: 14px; line-height: 1.5;">
+              To automatically create workflows, we need your n8n API key.
+            </p>
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <div style="
+              background: #252525;
+              border: 1px solid #404040;
+              border-radius: 8px;
+              padding: 16px;
+              margin-bottom: 16px;
+            ">
+              <h4 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; color: #3ecf8e;">📋 How to get your API key:</h4>
+              <ol style="margin: 0; padding-left: 20px; color: #d1d5db; font-size: 14px; line-height: 1.6;">
+                <li style="margin-bottom: 8px;">Look for the <strong>highlighted profile icon</strong> in the bottom-left corner</li>
+                <li style="margin-bottom: 8px;">Click the profile icon and select <strong>"Settings"</strong></li>
+                <li style="margin-bottom: 8px;">Go to <strong>"n8n API"</strong> section</li>
+                <li style="margin-bottom: 8px;">Click <strong>"Create an API key"</strong></li>
+                <li style="margin-bottom: 8px;">Give it a <strong>Label</strong>, Set <strong>Expiration to No Expiration</strong>, then <strong>Save</strong></li>
+                <li>Copy the generated key and paste it below</li>
+              </ol>
+            </div>
+            
+            <div style="
+              background: linear-gradient(45deg, #3ecf8e, #2dd4bf);
+              border-radius: 8px;
+              padding: 12px;
+              text-align: center;
+              margin-bottom: 16px;
+              animation: pulse 2s infinite;
+            ">
+              <div style="font-size: 12px; font-weight: 600; color: #ffffff;">Profile Icon → Settings → n8n API</div>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: #d1d5db;">API Key:</label>
+            <input type="password" id="api-key-input" placeholder="Enter your n8n API key..." style="
+              width: 100%;
+              padding: 12px 16px;
+              background: #2a2a2a;
+              border: 1px solid #404040;
+              border-radius: 8px;
+              color: #ffffff;
+              font-size: 14px;
+              font-family: 'Courier New', monospace;
+              outline: none;
+              box-sizing: border-box;
+            ">
+          </div>
+          
+          <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <button id="cancel-api-setup" style="
+              padding: 10px 20px;
+              background: #404040;
+              border: 1px solid #555555;
+              border-radius: 6px;
+              color: #a0a0a0;
+              font-size: 14px;
+              cursor: pointer;
+            ">Cancel</button>
+            <button id="save-api-key" style="
+              padding: 10px 20px;
+              background: #3ecf8e;
+              border: 1px solid #2dd4bf;
+              border-radius: 6px;
+              color: #ffffff;
+              font-size: 14px;
+              cursor: pointer;
+              font-weight: 500;
+            ">Save & Continue</button>
+          </div>
+        </div>
+      `;
+
+      // Add animation styles
+      const animationStyle = document.createElement('style');
+      animationStyle.textContent = `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+        @keyframes highlight {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(62, 207, 142, 0.7); }
+          50% { box-shadow: 0 0 0 10px rgba(62, 207, 142, 0.3); }
+        }
+      `;
+      document.head.appendChild(animationStyle);
+
+      document.body.appendChild(modalOverlay);
+      this.setupApiKeyModalListeners(modalOverlay);
+    }
+
+    highlightProfileIcon() {
+      // Try to find and highlight the profile icon in n8n
+      const possibleSelectors = [
+        'img[alt*="avatar"]',
+        'img[alt*="profile"]',
+        '[data-test-id*="user"]',
+        'nav img',
+        '.sidebar img'
+      ];
+
+      let profileIcon = null;
+      
+      for (const selector of possibleSelectors) {
+        const elements = document.querySelectorAll(selector);
+        for (const element of elements) {
+          const rect = element.getBoundingClientRect();
+          // Look for small images in the bottom-left quadrant
+          if (rect.width < 100 && rect.height < 100 && 
+              rect.left < window.innerWidth / 2 && 
+              rect.bottom > window.innerHeight / 2) {
+            profileIcon = element;
+            break;
+          }
+        }
+        if (profileIcon) break;
+      }
+
+      if (profileIcon) {
+        profileIcon.style.animation = 'highlight 2s infinite';
+        profileIcon.style.border = '2px solid #3ecf8e';
+        profileIcon.style.borderRadius = '50%';
+        profileIcon.style.position = 'relative';
+        profileIcon.style.zIndex = '99999';
+        
+        window.n9nHighlightedElement = profileIcon;
+        console.log('✅ Found and highlighted profile icon!');
+      }
+    }
+
+    setupApiKeyModalListeners(modal) {
+      const input = modal.querySelector('#api-key-input');
+      const saveBtn = modal.querySelector('#save-api-key');
+      const cancelBtn = modal.querySelector('#cancel-api-setup');
+      const closeBtn = modal.querySelector('#close-api-modal');
+
+      const closeModal = () => {
+        modal.remove();
+        this.cleanupHighlights();
+      };
+
+      const saveApiKey = () => {
+        const apiKey = input.value.trim();
+        if (apiKey && apiKey.length > 10) {
+          // Save to localStorage and Chrome storage
+          localStorage.setItem('n8n_api_key', apiKey);
+          if (chrome && chrome.storage) {
+            chrome.storage.local.set({ 'n8n_api_key': apiKey });
+          }
+          
+          this.uiService.showNotification('✅ API Key saved successfully!', 'success');
+          closeModal();
+        } else {
+          this.uiService.showNotification('❌ Please enter a valid API key', 'error');
+        }
+      };
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') saveApiKey();
+      });
+
+      saveBtn.addEventListener('click', saveApiKey);
+      cancelBtn.addEventListener('click', closeModal);
+      closeBtn.addEventListener('click', closeModal);
+      
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+    }
+
+    cleanupHighlights() {
+      if (window.n9nHighlightedElement) {
+        window.n9nHighlightedElement.style.animation = '';
+        window.n9nHighlightedElement.style.border = '';
+        window.n9nHighlightedElement.style.borderRadius = '';
+        window.n9nHighlightedElement.style.position = '';
+        window.n9nHighlightedElement.style.zIndex = '';
+        window.n9nHighlightedElement = null;
+      }
     }
 
     extractWorkflowFromMessage(content) {
