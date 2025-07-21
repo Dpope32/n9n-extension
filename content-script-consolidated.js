@@ -1,7 +1,3 @@
-import { ChatPanel } from './components/panel/ChatPanel.jsx';
-import { ChatService } from './services/ChatService.ts';
-import { UIService } from './services/UIService.ts';
-
 // ============================================================================
 // Simple main copilot class
 // ============================================================================
@@ -292,8 +288,5 @@ class N9NCopilot {
 // Initialize
 const copilot = new N9NCopilot();
 window.n9nCopilot = copilot;
-window.ChatPanel = ChatPanel;
-window.ChatService = ChatService;
-window.UIService = UIService;
 
 console.log('n9n AI Copilot loaded successfully');

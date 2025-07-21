@@ -24,7 +24,12 @@
         "*://127.0.0.1:*/*",
         "*://100.78.164.43:*/*"
       ],
-      "js": ["content-script-consolidated.js"],
+      "js": [
+        "src/services/ChatService.js",
+        "src/services/UIService.js",
+        "components/ChatPanel.js",
+        "content-script-consolidated.js"
+      ],
       "css": ["content-styles.css"],
       "run_at": "document_end"
     }
@@ -45,7 +50,7 @@
     }
   ],
   "action": {
-    "default_popup": "components/panel/popup.html",
+    "default_popup": "components/popup/popup.html",
     "default_title": "n9n AI Copilot",
     "default_icon": {
       "16": "assets/n9n.png",
