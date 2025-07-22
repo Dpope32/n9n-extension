@@ -17,14 +17,31 @@
   - Write unit tests for AuthManager authentication methods
   - _Requirements: 1.1, 2.1, 4.1_
 
-- [ ] 2. Implement SessionManager for secure token storage
+- [x] 2. Implement SessionManager for secure token storage
+
+
+
+
   - Create SessionManager class using Chrome storage API for session persistence
   - Implement storeSession, getStoredSession, and clearSession methods
   - Add session validation logic with expiration checking
   - Write unit tests for session storage and retrieval operations
   - _Requirements: 3.1, 3.2, 3.3, 4.2_
 
-- [ ] 3. Create authentication UI components
+- [x] 3. Create authentication UI components
+
+
+
+
+
+
+
+
+
+
+
+
+
   - Design and implement sign-in form HTML structure within sidebar
   - Create sign-up form with email and password validation
   - Add password reset form with email input

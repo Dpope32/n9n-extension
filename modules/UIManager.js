@@ -2046,23 +2046,186 @@ class UIManager {
     });
   }
 
-  async copyWorkflowFromMessage(messageId) {
+  async copyToClipboard(text) {
+    console.log('📋 Attempting to copy to clipboard...', text.length, 'characters');
+    
     try {
-      // Find the message and extract workflow JSON
-      const messages = await window.chatManager.getMessages();
-      const message = messages.find(m => m.id === messageId);
-
-      if (message && message.content.includes('```json')) {
-        const jsonMatch = message.content.match(/```json\n([\s\S]*?)\n```/);
-        if (jsonMatch) {
-          await navigator.clipboard.writeText(jsonMatch[1]);
-          this.showNotification('✅ Workflow copied to clipboard!', 'success');
-        }
+      // Method 1: Try modern Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        console.log('🎆 Method 1: Using modern Clipboard API');
+        await navigator.clipboard.writeText(text);
+        console.log('✅ Modern clipboard API successful!');
+        return true;
       }
     } catch (error) {
-      console.error('Failed to copy workflow:', error);
-      this.showNotification('❌ Failed to copy workflow', 'error');
+      console.warn('⚠️ Modern clipboard API failed:', error);
     }
+    
+    try {
+      // Method 2: Try legacy execCommand
+      console.log('🎆 Method 2: Using legacy execCommand');
+      
+      // Create a temporary textarea
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      textarea.style.pointerEvents = 'none';
+      document.body.appendChild(textarea);
+      
+      // Select and copy
+      textarea.select();
+      textarea.setSelectionRange(0, 99999); // For mobile devices
+      
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      
+      if (successful) {
+        console.log('✅ Legacy execCommand successful!');
+        return true;
+      } else {
+        console.warn('⚠️ execCommand returned false');
+      }
+    } catch (error) {
+      console.warn('⚠️ Legacy execCommand failed:', error);
+    }
+    
+    try {
+      // Method 3: Try Chrome extension API if available
+      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        console.log('🎆 Method 3: Using Chrome extension messaging');
+        
+        return new Promise((resolve) => {
+          chrome.runtime.sendMessage(
+            { action: 'copyToClipboard', text: text },
+            (response) => {
+              if (response && response.success) {
+                console.log('✅ Chrome extension clipboard successful!');
+                resolve(true);
+              } else {
+                console.warn('⚠️ Chrome extension clipboard failed');
+                resolve(false);
+              }
+            }
+          );
+        });
+      }
+    } catch (error) {
+      console.warn('⚠️ Chrome extension method failed:', error);
+    }
+    
+    // Method 4: Fallback - show text in a modal for manual copy
+    console.log('🎆 Method 4: Fallback to manual copy modal');
+    this.showTextCopyModal(text);
+    return false;
+  }
+  
+  showTextCopyModal(text) {
+    console.log('📝 Showing manual copy modal');
+    
+    // Remove existing modal if any
+    const existingModal = document.querySelector('#n9n-copy-modal');
+    if (existingModal) existingModal.remove();
+    
+    const modal = document.createElement('div');
+    modal.id = 'n9n-copy-modal';
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 10001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease;
+    `;
+    
+    modal.innerHTML = `
+      <div style="
+        background: #18181b;
+        border: 1px solid #27272a;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      ">
+        <div style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 16px;
+        ">
+          <h3 style="
+            margin: 0;
+            color: #fafafa;
+            font-size: 18px;
+            font-weight: 600;
+          ">Copy Workflow JSON</h3>
+          <button onclick="this.closest('#n9n-copy-modal').remove()" style="
+            background: none;
+            border: none;
+            color: #a1a1aa;
+            cursor: pointer;
+            font-size: 20px;
+            padding: 4px;
+          ">×</button>
+        </div>
+        
+        <p style="
+          margin: 0 0 12px 0;
+          color: #a1a1aa;
+          font-size: 14px;
+        ">Automatic clipboard copy failed. Please manually select and copy the JSON below:</p>
+        
+        <textarea readonly style="
+          width: 100%;
+          height: 300px;
+          background: #09090b;
+          border: 1px solid #27272a;
+          border-radius: 6px;
+          padding: 12px;
+          color: #fafafa;
+          font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+          font-size: 12px;
+          line-height: 1.4;
+          resize: none;
+          outline: none;
+        ">${text}</textarea>
+        
+        <div style="
+          display: flex;
+          gap: 12px;
+          margin-top: 16px;
+          justify-content: flex-end;
+        ">
+          <button onclick="this.closest('#n9n-copy-modal').remove()" style="
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            border-radius: 6px;
+            padding: 8px 16px;
+            color: #fafafa;
+            cursor: pointer;
+            transition: all 0.2s;
+          ">Close</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Auto-select the text
+    const textarea = modal.querySelector('textarea');
+    setTimeout(() => {
+      textarea.select();
+      textarea.setSelectionRange(0, 99999);
+    }, 100);
   }
 
   async injectWorkflowFromMessage(messageId) {
@@ -2118,10 +2281,20 @@ class UIManager {
       // Check current page context
       const currentUrl = window.location.href;
       const hostname = window.location.hostname;
+      const port = window.location.port;
+      const pathname = window.location.pathname;
       console.log('🌐 Current URL:', currentUrl);
       console.log('🏠 Current hostname:', hostname);
-
-      const isN8nPage = hostname.includes('n8n') || hostname.includes('localhost') || currentUrl.includes('n8n');
+      console.log('🔌 Current port:', port);
+      console.log('📁 Current pathname:', pathname);
+      
+      // Improved n8n page detection
+      const isN8nPage = hostname.includes('n8n') || 
+                       hostname.includes('localhost') || 
+                       port === '5678' || 
+                       pathname.includes('/workflow') ||
+                       pathname.includes('/home/workflows') ||
+                       currentUrl.includes('n8n');
       console.log('🔍 Is n8n page?', isN8nPage);
 
       if (isN8nPage) {
@@ -2129,7 +2302,7 @@ class UIManager {
         await this.injectIntoN8nCanvas(workflow, jsonMatch[1]);
       } else {
         console.log('📋 Not on n8n page, copying to clipboard as fallback');
-        await navigator.clipboard.writeText(jsonMatch[1]);
+        await this.copyToClipboard(jsonMatch[1]);
         this.showNotification('📋 Workflow copied! Open n8n and paste (Ctrl+V)', 'info');
       }
 
