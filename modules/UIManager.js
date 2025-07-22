@@ -261,7 +261,7 @@ class UIManager {
         e.preventDefault();
         this.closeSidebar();
       });
-      
+
       // Hover effects
       headerCloseBtn.addEventListener('mouseenter', () => {
         headerCloseBtn.style.background = '#27272a';
@@ -284,7 +284,7 @@ class UIManager {
         e.preventDefault();
         await this.startNewChat();
       });
-      
+
       // Hover effects
       newChatBtn.addEventListener('mouseenter', () => {
         newChatBtn.style.background = '#27272a';
@@ -307,7 +307,7 @@ class UIManager {
         e.preventDefault();
         this.openSettings();
       });
-      
+
       // Hover effects
       settingsBtn.addEventListener('mouseenter', () => {
         settingsBtn.style.background = '#27272a';
@@ -819,7 +819,7 @@ class UIManager {
     messagesContainer.innerHTML = messages.map(message => {
       const isUser = message.role === 'user';
       const timeAgo = this.getTimeAgo(message.timestamp);
-      
+
       return `
         <div style="
           margin-bottom: 16px;
@@ -2009,7 +2009,7 @@ class UIManager {
         const messageId = btn.dataset.messageId;
         await this.copyWorkflowFromMessage(messageId);
       });
-      
+
       // Hover effects
       btn.addEventListener('mouseenter', () => {
         btn.style.background = '#27272a';
@@ -2022,7 +2022,7 @@ class UIManager {
         btn.style.borderColor = '#27272a';
       });
     });
-    
+
     // Inject workflow buttons
     const injectBtns = this.sidebar.querySelectorAll('.inject-workflow-btn');
     injectBtns.forEach(btn => {
@@ -2031,7 +2031,7 @@ class UIManager {
         const messageId = btn.dataset.messageId;
         await this.injectWorkflowFromMessage(messageId);
       });
-      
+
       // Hover effects
       btn.addEventListener('mouseenter', () => {
         btn.style.background = '#27272a';
@@ -2067,40 +2067,40 @@ class UIManager {
 
   async injectWorkflowFromMessage(messageId) {
     console.log('🚀 Starting workflow injection for message ID:', messageId);
-    
+
     try {
       // Find the message and extract workflow JSON
       console.log('📋 Getting messages from chat manager...');
       const messages = await window.chatManager.getMessages();
       console.log('✅ Retrieved', messages.length, 'messages');
-      
+
       const message = messages.find(m => m.id === messageId);
       if (!message) {
         console.error('❌ Message not found with ID:', messageId);
         this.showNotification('❌ Message not found', 'error');
         return;
       }
-      
+
       console.log('✅ Found message:', message.content.substring(0, 100) + '...');
-      
+
       if (!message.content.includes('```json')) {
         console.warn('⚠️ Message does not contain JSON code block');
         this.showNotification('⚠️ No workflow JSON found in message', 'error');
         return;
       }
-      
+
       console.log('🔍 Extracting JSON from message...');
       const jsonMatch = message.content.match(/```json\n([\s\S]*?)\n```/);
-      
+
       if (!jsonMatch) {
         console.error('❌ Could not extract JSON from message');
         this.showNotification('❌ Invalid JSON format', 'error');
         return;
       }
-      
+
       console.log('📄 Raw JSON length:', jsonMatch[1].length, 'characters');
       console.log('📄 JSON preview:', jsonMatch[1].substring(0, 200) + '...');
-      
+
       let workflow;
       try {
         workflow = JSON.parse(jsonMatch[1]);
@@ -2114,16 +2114,16 @@ class UIManager {
         this.showNotification('❌ Invalid JSON format: ' + parseError.message, 'error');
         return;
       }
-      
+
       // Check current page context
       const currentUrl = window.location.href;
       const hostname = window.location.hostname;
       console.log('🌐 Current URL:', currentUrl);
       console.log('🏠 Current hostname:', hostname);
-      
+
       const isN8nPage = hostname.includes('n8n') || hostname.includes('localhost') || currentUrl.includes('n8n');
       console.log('🔍 Is n8n page?', isN8nPage);
-      
+
       if (isN8nPage) {
         console.log('🎯 Attempting to inject workflow into n8n canvas...');
         await this.injectIntoN8nCanvas(workflow, jsonMatch[1]);
@@ -2132,7 +2132,7 @@ class UIManager {
         await navigator.clipboard.writeText(jsonMatch[1]);
         this.showNotification('📋 Workflow copied! Open n8n and paste (Ctrl+V)', 'info');
       }
-      
+
     } catch (error) {
       console.error('💥 Critical error in injectWorkflowFromMessage:', error);
       console.error('📊 Error stack:', error.stack);
@@ -2142,7 +2142,7 @@ class UIManager {
 
   async injectIntoN8nCanvas(workflow, rawJson) {
     console.log('🎨 Starting n8n canvas injection...');
-    
+
     // Check for n8n application context
     const n8nChecks = {
       'window.n8n': !!window.n8n,
@@ -2154,12 +2154,12 @@ class UIManager {
       'n8n workflow': !!document.querySelector('.workflow-canvas'),
       'vuex store': !!window.$nuxt?.$store
     };
-    
+
     console.log('🔍 n8n Environment checks:', n8nChecks);
-    
+
     // Try multiple injection methods
     let injectionSuccessful = false;
-    
+
     // Method 1: Try n8n API if available
     if (window.n8n && window.n8n.importWorkflow) {
       console.log('🚀 Method 1: Using n8n.importWorkflow API');
@@ -2171,7 +2171,7 @@ class UIManager {
         console.warn('⚠️ Method 1 failed:', error);
       }
     }
-    
+
     // Method 2: Try Nuxt/Vue store injection
     if (!injectionSuccessful && window.$nuxt?.$store) {
       console.log('🚀 Method 2: Using Nuxt store injection');
@@ -2184,32 +2184,32 @@ class UIManager {
         console.warn('⚠️ Method 2 failed:', error);
       }
     }
-    
+
     // Method 3: Try simulating paste event
     if (!injectionSuccessful) {
       console.log('🚀 Method 3: Simulating paste event');
       try {
         await navigator.clipboard.writeText(rawJson);
-        
+
         // Find canvas or app container
-        const canvas = document.querySelector('[data-test-id="canvas"]') || 
-                      document.querySelector('.workflow-canvas') ||
-                      document.querySelector('#app');
-        
+        const canvas = document.querySelector('[data-test-id="canvas"]') ||
+          document.querySelector('.workflow-canvas') ||
+          document.querySelector('#app');
+
         if (canvas) {
           console.log('📌 Found canvas element, simulating paste...');
           canvas.focus();
-          
+
           // Create and dispatch paste event
           const pasteEvent = new ClipboardEvent('paste', {
             clipboardData: new DataTransfer(),
             bubbles: true,
             cancelable: true
           });
-          
+
           // Add data to clipboard event
           pasteEvent.clipboardData.setData('text/plain', rawJson);
-          
+
           canvas.dispatchEvent(pasteEvent);
           console.log('✅ Method 3: Paste event dispatched');
           injectionSuccessful = true;
@@ -2220,13 +2220,13 @@ class UIManager {
         console.warn('⚠️ Method 3 failed:', error);
       }
     }
-    
+
     // Method 4: Try keyboard shortcut simulation
     if (!injectionSuccessful) {
       console.log('🚀 Method 4: Keyboard shortcut simulation');
       try {
         await navigator.clipboard.writeText(rawJson);
-        
+
         // Simulate Ctrl+V
         const keyEvent = new KeyboardEvent('keydown', {
           key: 'v',
@@ -2235,7 +2235,7 @@ class UIManager {
           bubbles: true,
           cancelable: true
         });
-        
+
         document.dispatchEvent(keyEvent);
         console.log('✅ Method 4: Keyboard event dispatched');
         injectionSuccessful = true;
@@ -2243,7 +2243,7 @@ class UIManager {
         console.warn('⚠️ Method 4 failed:', error);
       }
     }
-    
+
     // Final result
     if (injectionSuccessful) {
       console.log('🎉 Workflow injection completed successfully!');
@@ -2253,7 +2253,7 @@ class UIManager {
       await navigator.clipboard.writeText(rawJson);
       this.showNotification('📋 Workflow copied to clipboard. Try pasting (Ctrl+V) in n8n.', 'info');
     }
-    
+
     // Additional debugging info
     console.log('🔧 Available global objects:');
     const globalObjects = ['n8n', '$nuxt', 'Vue', '__NUXT__', '$store', 'app'];

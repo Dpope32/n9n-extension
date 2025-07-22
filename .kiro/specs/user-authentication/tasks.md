@@ -10,6 +10,7 @@
 
 
 
+
   - Implement AuthManager class with constructor and basic Supabase Auth client setup
   - Add signUp, signIn, signOut, and getSession methods using Supabase Auth API
   - Create error handling utilities for authentication failures
