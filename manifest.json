@@ -26,6 +26,8 @@
       ],
       "js": [
         "modules/Utils.js",
+        "modules/AuthManager.js",
+        "modules/ChatManager.js",
         "modules/UIManager.js",
         "src/services/ChatService.js",
         "src/services/UIService.js",
@@ -39,10 +41,10 @@
     "service_worker": "background.js"
   },
   "icons": {
-    "16": "assets/n9n.png",
-    "32": "assets/n9n.png",
-    "48": "assets/n9n.png",
-    "128": "assets/n9n.png"
+    "16": "assets/void.png",
+    "32": "assets/void.png",
+    "48": "assets/void.png",
+    "128": "assets/void.png"
   },
   "web_accessible_resources": [
     {
@@ -54,10 +56,10 @@
     "default_popup": "components/popup/popup.html",
     "default_title": "n9n AI Copilot",
     "default_icon": {
-      "16": "assets/n9n.png",
-      "32": "assets/n9n.png",
-      "48": "assets/n9n.png",
-      "128": "assets/n9n.png"
+      "16": "assets/void.png",
+      "32": "assets/void.png",
+      "48": "assets/void.png",
+      "128": "assets/void.png"
     }
   }
 }

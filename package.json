@@ -1,0 +1,45 @@
+{
+  "name": "n9n-ai-copilot",
+  "version": "1.0.0",
+  "description": "Chrome extension that provides AI-powered assistance for building n8n workflows",
+  "main": "background.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:performance": "jest tests/performance",
+    "test:verbose": "jest --verbose",
+    "test:silent": "jest --silent"
+  },
+  "keywords": [
+    "chrome-extension",
+    "n8n",
+    "ai",
+    "automation",
+    "workflow"
+  ],
+  "author": "n9n AI Copilot Team",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-node": "^29.7.0",
+    "node-fetch": "^3.3.2",
+    "@babel/core": "^7.23.0",
+    "@babel/preset-env": "^7.23.0",
+    "babel-jest": "^29.7.0"
+  },
+  "babel": {
+    "presets": [
+      [
+        "@babel/preset-env",
+        {
+          "targets": {
+            "node": "18"
+          }
+        }
+      ]
+    ]
+  }
+}

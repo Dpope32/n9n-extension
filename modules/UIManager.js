@@ -20,8 +20,8 @@ class UIManager {
       right: 0;
       width: 360px;
       height: 100vh;
-      background: rgba(15, 15, 15, 0.95);
-      border-left: 1px solid #2a2a2a;
+      background: rgba(9, 9, 11, 0.95);
+      border-left: 1px solid #27272a;
       backdrop-filter: blur(20px);
       z-index: 999999;
       transform: translateX(100%);
@@ -30,13 +30,16 @@ class UIManager {
       flex-direction: column;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     `;
-    
+
     this.sidebar.innerHTML = this.getSidebarHTML();
     this.addScrollbarStyles();
-    
+
     document.body.appendChild(this.sidebar);
     this.setupEventListeners();
-    this.renderInitialContent();
+    this.renderInitialContent().catch(error => {
+      console.error('Failed to render initial content:', error);
+      this.renderWelcomeMessage();
+    });
     return this.sidebar;
   }
 
@@ -46,155 +49,103 @@ class UIManager {
         display: flex;
         flex-direction: column;
         height: 100%;
-        background: linear-gradient(145deg, #1f1f1f 0%, #2a2a2a 100%);
-        color: #ffffff;
+        background: #09090b;
+        color: #fafafa;
       ">
-        <!-- Header with HAMBURGER icon -->
+        <!-- Header with icons -->
         <div style="
           display: flex;
           align-items: center;
           justify-content: space-between;
           padding: 16px 20px;
-          background: #2a2a2a;
-          border-bottom: 1px solid #404040;
+          background: #09090b;
+          border-bottom: 1px solid #27272a;
           min-height: 60px;
         ">
-          <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 16px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="color: #ffffff;">
+          <div style="display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 16px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="color: #fafafa;">
               <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2"/>
               <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2"/>
               <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2"/>
             </svg>
-            <span>n9n</span>
+            <span style="color: #fafafa;">n9n</span>
           </div>
-          <div style="display: flex; gap: 4px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="new-chat-btn" style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 36px;
+              height: 36px;
+              background: #18181b;
+              border: 1px solid #27272a;
+              border-radius: 8px;
+              color: #a1a1aa;
+              cursor: pointer;
+              transition: all 0.2s ease;
+            " title="New Chat">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+            </button>
+            <button id="settings-btn" style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 36px;
+              height: 36px;
+              background: #18181b;
+              border: 1px solid #27272a;
+              border-radius: 8px;
+              color: #a1a1aa;
+              cursor: pointer;
+              transition: all 0.2s ease;
+            " title="Open n9n Web App">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </button>
             <button id="header-close-btn" style="
               display: flex;
               align-items: center;
               justify-content: center;
-              width: 24px;
-              height: 24px;
-              background: none;
-              border: none;
-              color: #a0a0a0;
+              width: 36px;
+              height: 36px;
+              background: #18181b;
+              border: 1px solid #27272a;
+              border-radius: 8px;
+              color: #a1a1aa;
               cursor: pointer;
-              border-radius: 4px;
               transition: all 0.2s ease;
             " title="Close Panel">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 6L6 18M6 6l12 12"/>
               </svg>
             </button>
           </div>
         </div>
         
-        <!-- Chat Controls Section -->
-        <div style="
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 8px 16px;
-          background: #252525;
-          border-bottom: 1px solid #404040;
-          min-height: 18px;
-        ">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <!-- Current Conversation Pill -->
-            <div id="current-convo-pill" style="
-              display: none;
-              align-items: center;
-              gap: 6px;
-              background: #404040;
-              border: 1px solid #555555;
-              border-radius: 12px;
-              padding: 4px 8px;
-              font-size: 11px;
-              color: #d1d5db;
-              max-width: 180px;
-            ">
-              <span id="convo-title" style="
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                flex: 1;
-              ">Current Chat</span>
-              <button id="close-convo-btn" style="
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 14px;
-                height: 14px;
-                background: none;
-                border: none;
-                color: #a0a0a0;
-                cursor: pointer;
-                border-radius: 2px;
-                transition: all 0.2s ease;
-              " title="Close Current Chat">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-            <button id="new-chat-btn" style="
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              width: 24px;
-              height: 24px;
-              background: none;
-              border: none;
-              color: #a0a0a0;
-              cursor: pointer;
-              border-radius: 4px;
-              transition: all 0.2s ease;
-            " title="New Chat">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-            </button>
-          </div>
-          <button id="settings-btn" style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 24px;
-            height: 24px;
-            background: none;
-            border: none;
-            color: #a0a0a0;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-          " title="Open n9n Web App">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-          </button>
-        </div>
-        
         <!-- Messages Container -->
         <div id="messages-container" style="
           flex: 1;
           overflow-y: auto;
-          padding: 12px 16px;
+          padding: 8px 0;
           display: flex;
           flex-direction: column;
-          gap: 12px;
-          background: #1f1f1f;
+          background: #09090b;
         "></div>
         
         <!-- Input Area -->
         <div style="
-          border-top: 1px solid #404040;
-          background: #2a2a2a;
+          border-top: 1px solid #27272a;
+          background: #18181b;
         ">
           <div style="
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px 16px;
+            padding: 12px 10px;
           ">
             <input 
               id="chat-input"
@@ -203,11 +154,11 @@ class UIManager {
               maxlength="500"
               style="
                 flex: 1;
-                background: #404040;
-                border: 1px solid #555555;
+                background: #27272a;
+                border: 1px solid #3f3f46;
                 border-radius: 8px;
                 padding: 8px 12px;
-                color: #ffffff;
+                color: #fafafa;
                 font-size: 13px;
                 line-height: 1.4;
                 outline: none;
@@ -217,7 +168,7 @@ class UIManager {
               "
             >
             <button id="send-btn" disabled style="
-              background: #000000;
+              background: none;
               border: none;
               border-radius: 8px;
               width: 32px;
@@ -225,7 +176,7 @@ class UIManager {
               display: flex;
               align-items: center;
               justify-content: center;
-              color: #ffffff;
+              color: #fafafa;
               cursor: pointer;
               transition: all 0.2s;
               flex-shrink: 0;
@@ -243,15 +194,15 @@ class UIManager {
             align-items: center;
             justify-content: space-between;
             padding: 8px 16px 12px;
-            border-top: 1px solid #404040;
-            background: #2a2a2a;
+            border-top: 1px solid #27272a;
+            background: #27272a;
           ">
             <div style="
               display: flex;
               align-items: center;
               gap: 8px;
               font-size: 10px;
-              color: #a0a0a0;
+              color: #a1a1aa;
             ">
               <span>✓ Read, Edit, Browser, Model</span>
             </div>
@@ -261,11 +212,11 @@ class UIManager {
               gap: 8px;
             ">
               <select id="model-selector" style="
-                background: #404040;
-                border: 1px solid #555555;
+                background: #09090b;
+                border: 1px solid #3f3f46;
                 border-radius: 4px;
                 padding: 2px 6px;
-                color: #ffffff;
+                color: #fafafa;
                 font-size: 10px;
                 cursor: pointer;
                 outline: none;
@@ -297,7 +248,7 @@ class UIManager {
   }
 
   setupEventListeners() {
-    
+
     if (!this.sidebar) {
       console.log('❌ No sidebar found for event listeners');
       return;
@@ -310,6 +261,18 @@ class UIManager {
         e.preventDefault();
         this.closeSidebar();
       });
+      
+      // Hover effects
+      headerCloseBtn.addEventListener('mouseenter', () => {
+        headerCloseBtn.style.background = '#27272a';
+        headerCloseBtn.style.color = '#fafafa';
+        headerCloseBtn.style.borderColor = '#3f3f46';
+      });
+      headerCloseBtn.addEventListener('mouseleave', () => {
+        headerCloseBtn.style.background = '#18181b';
+        headerCloseBtn.style.color = '#a1a1aa';
+        headerCloseBtn.style.borderColor = '#27272a';
+      });
     } else {
       console.log('❌ Header close button not found');
     }
@@ -317,9 +280,21 @@ class UIManager {
     // New chat button  
     const newChatBtn = this.sidebar.querySelector('#new-chat-btn');
     if (newChatBtn) {
-      newChatBtn.addEventListener('click', (e) => {
+      newChatBtn.addEventListener('click', async (e) => {
         e.preventDefault();
-        this.startNewChat();
+        await this.startNewChat();
+      });
+      
+      // Hover effects
+      newChatBtn.addEventListener('mouseenter', () => {
+        newChatBtn.style.background = '#27272a';
+        newChatBtn.style.color = '#fafafa';
+        newChatBtn.style.borderColor = '#3f3f46';
+      });
+      newChatBtn.addEventListener('mouseleave', () => {
+        newChatBtn.style.background = '#18181b';
+        newChatBtn.style.color = '#a1a1aa';
+        newChatBtn.style.borderColor = '#27272a';
       });
     } else {
       console.log('❌ New chat button not found');
@@ -332,18 +307,30 @@ class UIManager {
         e.preventDefault();
         this.openSettings();
       });
+      
+      // Hover effects
+      settingsBtn.addEventListener('mouseenter', () => {
+        settingsBtn.style.background = '#27272a';
+        settingsBtn.style.color = '#fafafa';
+        settingsBtn.style.borderColor = '#3f3f46';
+      });
+      settingsBtn.addEventListener('mouseleave', () => {
+        settingsBtn.style.background = '#18181b';
+        settingsBtn.style.color = '#a1a1aa';
+        settingsBtn.style.borderColor = '#27272a';
+      });
     } else {
       console.log('❌ Settings button not found');
     }
 
-    // Close conversation button
-    const closeConvoBtn = this.sidebar.querySelector('#close-convo-btn');
-    if (closeConvoBtn) {
-      closeConvoBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.closeCurrentConversation();
-      });
-    }
+    // Close conversation button - REMOVED since section was deleted
+    // const closeConvoBtn = this.sidebar.querySelector('#close-convo-btn');
+    // if (closeConvoBtn) {
+    //   closeConvoBtn.addEventListener('click', (e) => {
+    //     e.preventDefault();
+    //     this.closeCurrentConversation();
+    //   });
+    // }
 
     // Send button
     const sendBtn = this.sidebar.querySelector('#send-btn');
@@ -396,24 +383,44 @@ class UIManager {
     }
   }
 
-  startNewChat() {
-    
-    // Hide the conversation pill
-    const pill = this.sidebar.querySelector('#current-convo-pill');
-    if (pill) {
-      pill.style.display = 'none';
+  async startNewChat() {
+    // Hide the conversation pill - REMOVED since pill no longer exists
+    // const pill = this.sidebar.querySelector('#current-convo-pill');
+    // if (pill) {
+    //   pill.style.display = 'none';
+    // }
+
+    try {
+      // Check if ChatManager is available
+      if (!window.ChatManager) {
+        console.warn('⚠️ ChatManager not available');
+        this.renderWelcomeMessage();
+        return;
+      }
+
+      // Initialize ChatManager if needed
+      if (!window.chatManager) {
+        window.chatManager = new window.ChatManager();
+      }
+
+      // Start new conversation
+      await window.chatManager.startNewConversation();
+
+      // Show welcome message
+      this.renderWelcomeMessage();
+
+      // Clear and focus input
+      const chatInput = this.sidebar.querySelector('#chat-input');
+      if (chatInput) {
+        chatInput.value = '';
+        chatInput.focus();
+      }
+
+      this.showNotification('New chat started!', 'success');
+    } catch (error) {
+      console.error('Error starting new chat:', error);
+      this.renderWelcomeMessage();
     }
-    
-    // Show welcome message
-    this.renderWelcomeMessage();
-    
-    // Clear input focus
-    const chatInput = this.sidebar.querySelector('#chat-input');
-    if (chatInput) {
-      chatInput.focus();
-    }
-    
-    this.showNotification('New chat started!', 'success');
   }
 
 
@@ -422,18 +429,18 @@ class UIManager {
   }
 
   closeCurrentConversation() {
-    // Hide the conversation pill
-    const pill = this.sidebar.querySelector('#current-convo-pill');
-    if (pill) {
-      pill.style.display = 'none';
-    }
+    // Hide the conversation pill - REMOVED since pill no longer exists
+    // const pill = this.sidebar.querySelector('#current-convo-pill');
+    // if (pill) {
+    //   pill.style.display = 'none';
+    // }
     this.showNotification('Conversation closed', 'success');
   }
 
-  sendMessage() {
+  async sendMessage() {
     const input = this.sidebar.querySelector('#chat-input');
     const sendBtn = this.sidebar.querySelector('#send-btn');
-    
+
     if (!input || !input.value.trim()) {
       console.log('❌ No message to send');
       return;
@@ -441,43 +448,173 @@ class UIManager {
 
     const message = input.value.trim();
     console.log('📤 Sending message:', message);
-    
-    // Clear input
+
+    // Clear input immediately to prevent double-sends
     input.value = '';
     if (sendBtn) {
       sendBtn.disabled = true;
       sendBtn.style.opacity = '0.5';
     }
 
-    // TODO: Implement actual message sending
-    this.showNotification('Message sent! (Feature coming soon)', 'success');
+    try {
+      // Check if ChatManager is available
+      if (!window.ChatManager) {
+        throw new Error('ChatManager not available');
+      }
+
+      // Initialize ChatManager if not exists
+      if (!window.chatManager) {
+        window.chatManager = new window.ChatManager();
+        // Wait for Supabase to initialize
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+
+      // Add user message first
+      await window.chatManager.addMessage('user', message);
+
+      // Get and render current messages immediately
+      const messages = await window.chatManager.getMessages();
+      this.renderMessages(messages);
+
+      // Show typing indicator
+      this.addTypingIndicator();
+
+      // Simulate AI response (replace with your actual AI service)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Generate AI response
+      const aiResponse = this.generateMockAIResponse(message);
+      await window.chatManager.addMessage('assistant', aiResponse.content, aiResponse.metadata);
+
+      // Remove typing indicator
+      const typingIndicator = this.sidebar.querySelector('.typing-indicator');
+      if (typingIndicator) {
+        typingIndicator.remove();
+      }
+
+      // Render updated messages
+      const updatedMessages = await window.chatManager.getMessages();
+      this.renderMessages(updatedMessages);
+
+      // Handle conversation management
+      await window.chatManager.handleMessageExchange(message);
+
+      // Update conversation pill if needed - REMOVED since pill no longer exists
+      // this.updateConversationPill(window.chatManager);
+
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      this.showNotification('Failed to send message: ' + error.message, 'error');
+
+      // Remove typing indicator if it exists
+      const typingIndicator = this.sidebar.querySelector('.typing-indicator');
+      if (typingIndicator) {
+        typingIndicator.remove();
+      }
+    } finally {
+      // Re-enable send button
+      if (sendBtn) {
+        sendBtn.disabled = false;
+        sendBtn.style.opacity = '1';
+      }
+    }
   }
 
-  renderInitialContent() {
-    const recentConversations = this.getRecentConversations();
-    
-    if (recentConversations.length > 0) {
-      console.log(`📋 Rendering ${recentConversations.length} recent conversations`);
-      this.renderRecentConversations(recentConversations);
-    } else {
-      console.log('👋 No recent conversations, showing welcome message');
+  generateMockAIResponse(userMessage) {
+    const isWorkflowRequest = userMessage.toLowerCase().includes('workflow') ||
+      userMessage.toLowerCase().includes('automation') ||
+      userMessage.toLowerCase().includes('make');
+
+    if (isWorkflowRequest) {
+      const mockWorkflow = {
+        nodes: [
+          {
+            id: "start",
+            type: "n8n-nodes-base.manualTrigger",
+            name: "Manual Trigger",
+            position: [250, 300]
+          },
+          {
+            id: "process",
+            type: "n8n-nodes-base.function",
+            name: "Process Data",
+            position: [450, 300],
+            parameters: {
+              functionCode: `// Your workflow logic here\nreturn items.map(item => {\n  return {\n    json: {\n      ...item.json,\n      processed: true,\n      timestamp: new Date().toISOString()\n    }\n  };\n});`
+            }
+          }
+        ]
+      };
+
+      return {
+        content: `Great idea! I've generated a workflow that handles that automation. Here's the n8n workflow JSON:\n\n\`\`\`json\n${JSON.stringify(mockWorkflow, null, 2)}\n\`\`\`\n\nThis workflow includes:\n1. **Manual Trigger** - Starts the workflow when you run it\n2. **Process Data** - Handles your data transformation\n\nYou can copy the JSON above and import it into n8n!`,
+        metadata: { workflow: mockWorkflow }
+      };
+    }
+
+    const responses = [
+      "I can help you create n8n workflows! What kind of automation are you looking to build?",
+      "That sounds interesting! Let me help you break that down into workflow steps.",
+      "Perfect! I can definitely help you automate that process with n8n.",
+      "Great question! Let me guide you through setting up that workflow."
+    ];
+
+    return {
+      content: responses[Math.floor(Math.random() * responses.length)],
+      metadata: {}
+    };
+  }
+
+  async renderInitialContent() {
+    // Initialize ChatManager with better error handling
+    try {
+      if (!window.ChatManager) {
+        console.warn('⚠️ ChatManager not available, falling back to welcome message');
+        this.renderWelcomeMessage();
+        return;
+      }
+
+      if (!window.chatManager) {
+        window.chatManager = new window.ChatManager();
+        // Wait a bit for Supabase to initialize
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+
+      const recentConversations = await this.getRecentConversations();
+
+      if (recentConversations.length > 0) {
+        console.log(`📋 Rendering ${recentConversations.length} recent conversations`);
+        this.renderRecentConversations(recentConversations);
+      } else {
+        console.log('👋 No recent conversations, showing welcome message');
+        this.renderWelcomeMessage();
+      }
+    } catch (error) {
+      console.error('❌ Error in renderInitialContent:', error);
       this.renderWelcomeMessage();
     }
   }
 
-  getRecentConversations() {
-    // Try to get from localStorage first
+  async getRecentConversations() {
+    if (window.chatManager && window.ChatManager) {
+      try {
+        return await window.chatManager.getRecentConversations();
+      } catch (error) {
+        console.log('Error loading recent conversations from ChatManager:', error);
+      }
+    }
+
+    // Fallback to localStorage
     try {
       const stored = localStorage.getItem('n9n_recent_conversations');
       if (stored) {
         const conversations = JSON.parse(stored);
-        return conversations.filter(conv => conv && conv.id); // Filter out invalid entries
+        return conversations.filter(conv => conv && conv.id);
       }
     } catch (error) {
-      console.log('Error loading recent conversations:', error);
+      console.log('Error loading recent conversations from localStorage:', error);
     }
 
-    // Return empty array if no conversations found
     return [];
   }
 
@@ -493,32 +630,23 @@ class UIManager {
         <div style="
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: flex-start;
           margin-bottom: 16px;
-          padding: 0 4px;
+          padding: 0 16px;
         ">
           <h3 style="
             margin: 0;
             font-size: 16px;
             font-weight: 600;
-            color: #ffffff;
+            color: #fafafa;
           ">Recent Conversations</h3>
-          <button class="new-conversation-btn" style="
-            background: none;
-            border: none;
-            color: #a0a0a0;
-            font-size: 12px;
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 4px;
-            transition: all 0.2s;
-          " title="Start New Conversation">+ New</button>
         </div>
         
         <div style="
           display: flex;
           flex-direction: column;
           gap: 8px;
+          padding: 0 16px;
         ">
           ${conversations.slice(0, 5).map(conv => this.renderConversationItem(conv)).join('')}
         </div>
@@ -532,12 +660,12 @@ class UIManager {
   renderConversationItem(conversation) {
     const timeAgo = this.getTimeAgo(conversation.timestamp || conversation.lastActivity || Date.now());
     const messageCount = conversation.messageCount || conversation.messages?.length || 0;
-    
+
     return `
       <div class="conversation-item" data-conversation-id="${conversation.id}" style="
         padding: 12px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid #404040;
+        background: #18181b;
+        border: 1px solid #27272a;
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.2s;
@@ -546,7 +674,7 @@ class UIManager {
           font-size: 14px;
           font-weight: 500;
           margin-bottom: 4px;
-          color: #ffffff;
+          color: #fafafa;
           line-height: 1.3;
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -557,7 +685,7 @@ class UIManager {
         </div>
         <div style="
           font-size: 11px;
-          color: #a0a0a0;
+          color: #a1a1aa;
           display: flex;
           align-items: center;
           gap: 8px;
@@ -575,60 +703,42 @@ class UIManager {
     conversationItems.forEach(item => {
       item.addEventListener('click', (e) => {
         const conversationId = item.dataset.conversationId;
-     //   console.log('🗨️ Loading conversation:', conversationId);  
+        //   console.log('🗨️ Loading conversation:', conversationId);  
         this.loadConversation(conversationId);
       });
 
       // Hover effects
       item.addEventListener('mouseenter', () => {
-        item.style.background = 'rgba(255, 255, 255, 0.08)';
-        item.style.borderColor = '#555';
+        item.style.background = '#27272a';
+        item.style.borderColor = '#3f3f46';
       });
 
       item.addEventListener('mouseleave', () => {
-        item.style.background = 'rgba(255, 255, 255, 0.03)';
-        item.style.borderColor = '#404040';
+        item.style.background = '#18181b';
+        item.style.borderColor = '#27272a';
       });
     });
-
-    // New conversation button
-    const newConvBtn = this.sidebar.querySelector('.new-conversation-btn');
-    if (newConvBtn) {
-      newConvBtn.addEventListener('click', () => {
-        this.startNewChat();
-      });
-
-      newConvBtn.addEventListener('mouseenter', () => {
-        newConvBtn.style.background = 'rgba(255, 255, 255, 0.1)';
-        newConvBtn.style.color = '#ffffff';
-      });
-
-      newConvBtn.addEventListener('mouseleave', () => {
-        newConvBtn.style.background = 'none';
-        newConvBtn.style.color = '#a0a0a0';
-      });
-    }
   }
 
   loadConversation(conversationId) {
     // TODO: Implement conversation loading
     // For now, just show the conversation and switch to chat mode
     this.showNotification(`Loading conversation ${conversationId}...`, 'info');
-    
-    // Show the conversation pill
-    const pill = this.sidebar.querySelector('#current-convo-pill');
-    const titleSpan = this.sidebar.querySelector('#convo-title');
-    
-    if (pill && titleSpan) {
-      // Try to get conversation title
-      const conversations = this.getRecentConversations();
-      const conv = conversations.find(c => c.id === conversationId);
-      
-      if (conv) {
-        titleSpan.textContent = conv.title || 'Untitled Conversation';
-        pill.style.display = 'flex';
-      }
-    }
+
+    // Show the conversation pill - REMOVED since pill no longer exists
+    // const pill = this.sidebar.querySelector('#current-convo-pill');
+    // const titleSpan = this.sidebar.querySelector('#convo-title');
+
+    // if (pill && titleSpan) {
+    //   // Try to get conversation title
+    //   const conversations = this.getRecentConversations();
+    //   const conv = conversations.find(c => c.id === conversationId);
+
+    //   if (conv) {
+    //     titleSpan.textContent = conv.title || 'Untitled Conversation';
+    //     pill.style.display = 'flex';
+    //   }
+    // }
 
     // Switch back to welcome/empty chat view for now
     this.renderWelcomeMessage();
@@ -650,19 +760,19 @@ class UIManager {
         justify-content: center;
         text-align: center;
         padding: 40px 20px;
-        color: #a0a0a0;
+        color: #a1a1aa;
       ">
         <h3 style="
           margin: 0 0 12px 0; 
           font-size: 18px; 
           font-weight: 600; 
-          color: #ffffff;
+          color: #fafafa;
         "> Welcome Back!</h3>
         <p style="
           margin: 0 0 24px 0; 
           font-size: 14px; 
           line-height: 1.5;
-          color: #888;
+          color: #71717a;
         ">Ready to build?</p>
         
 
@@ -675,13 +785,13 @@ class UIManager {
       demoBtn.addEventListener('click', () => {
         this.addDemoConversations();
       });
-      
+
       demoBtn.addEventListener('mouseenter', () => {
         demoBtn.style.background = 'rgba(255, 255, 255, 0.1)';
         demoBtn.style.borderColor = '#555';
         demoBtn.style.color = '#ffffff';
       });
-      
+
       demoBtn.addEventListener('mouseleave', () => {
         demoBtn.style.background = 'rgba(255, 255, 255, 0.05)';
         demoBtn.style.borderColor = '#404040';
@@ -712,68 +822,80 @@ class UIManager {
       
       return `
         <div style="
-          display: flex;
-          gap: 12px;
-          align-items: flex-start;
-          padding: 12px;
-          border-radius: 12px;
-          background: rgba(255, 255, 255, 0.02);
-          margin-bottom: 8px;
+          margin-bottom: 16px;
+          padding: 0 16px;
         ">
+          <!-- Author label -->
           <div style="
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: ${isUser ? '#404040' : '#2a2a2a'};
-            border: ${isUser ? 'none' : '1px solid #555555'};
+            font-size: 12px;
+            color: #71717a;
+            margin-bottom: 6px;
+            font-weight: 500;
+            ${isUser ? 'text-align: left;' : 'text-align: right;'}
+          ">
+            ${isUser ? 'You' : 'Assistant'}
+          </div>
+          
+          <!-- Message bubble -->
+          <div style="
+            background: ${isUser ? '#27272a' : '#18181b'};
+            border: 1px solid #27272a;
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #fafafa;
+            font-size: 14px;
+            line-height: 1.5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+          ">
+            ${this.formatMessageContent(message.content)}
+          </div>
+          
+          <!-- Timestamp and actions -->
+          <div style="
             display: flex;
             align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            font-size: ${isUser ? '14px' : '16px'};
-            color: ${isUser ? '#ffffff' : '#3ecf8e'};
+            justify-content: space-between;
+            margin-top: 6px;
+            padding: 0 4px;
           ">
-            ${isUser ? '👤' : '🤖'}
-          </div>
-          <div style="flex: 1; min-width: 0;">
             <div style="
-              color: #ffffff;
-              font-size: 14px;
-              line-height: 1.5;
-              margin-bottom: 4px;
-            ">${this.formatMessageContent(message.content)}</div>
-            <div style="
-              color: #a0a0a0;
               font-size: 11px;
-            ">${timeAgo}</div>
+              color: #71717a;
+            ">
+              ${timeAgo}
+            </div>
+            
             ${!isUser && message.content.includes('```json') ? `
-              <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <div style="
+                display: flex;
+                gap: 8px;
+              ">
                 <button class="copy-workflow-btn" data-message-id="${message.id}" style="
-                  background: #404040;
-                  border: 1px solid #555555;
+                  background: #09090b;
+                  border: 1px solid #27272a;
                   border-radius: 6px;
                   padding: 6px 12px;
-                  color: #a0a0a0;
+                  color: #a1a1aa;
                   font-size: 12px;
                   cursor: pointer;
                   transition: all 0.2s;
-                  display: flex;
-                  align-items: center;
-                  gap: 4px;
-                ">📋 Copy</button>
+                  font-family: inherit;
+                  font-weight: 500;
+                ">Copy</button>
                 <button class="inject-workflow-btn" data-message-id="${message.id}" style="
-                  background: #404040;
-                  border: 1px solid #555555;
+                  background: #09090b;
+                  border: 1px solid #27272a;
                   border-radius: 6px;
                   padding: 6px 12px;
-                  color: #a0a0a0;
+                  color: #a1a1aa;
                   font-size: 12px;
                   cursor: pointer;
                   transition: all 0.2s;
-                  display: flex;
-                  align-items: center;
-                  gap: 4px;
-                ">⚡ Inject</button>
+                  font-family: inherit;
+                  font-weight: 500;
+                ">Inject</button>
               </div>
             ` : ''}
           </div>
@@ -783,60 +905,77 @@ class UIManager {
 
     // Scroll to bottom
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Setup button event listeners
+    this.setupMessageButtonListeners();
   }
 
   formatMessageContent(content) {
     // Handle code blocks
     content = content.replace(/```json\n([\s\S]*?)\n```/g, (match, code) => {
-      return `
-        <div style="
-          margin: 12px 0;
-          border: 1px solid #404040;
-          border-radius: 8px;
+      return `<div style="
+          margin: 4px 0 0 0;
+          border: 1px solid #27272a;
+          border-radius: 6px;
           overflow: hidden;
+          background: #09090b;
         ">
           <div style="
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 8px 12px;
-            background: #2a2a2a;
-            border-bottom: 1px solid #404040;
-            font-size: 12px;
-            color: #a0a0a0;
+            background: #18181b;
+            border-bottom: 1px solid #27272a;
+            font-size: 11px;
+            color: #a1a1aa;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
           ">
-            <span>Workflow JSON</span>
-            <button onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(code)}'))" style="
-              background: none;
-              border: none;
-              color: #a0a0a0;
-              cursor: pointer;
-              font-size: 11px;
-              padding: 4px 8px;
-              border-radius: 4px;
-            ">📋 Copy</button>
+            <span>workflow.json</span>
           </div>
           <pre style="
             margin: 0;
             padding: 12px;
-            background: #1a1a1a;
-            color: #e6e6e6;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 12px;
+            background: #09090b;
+            color: #fafafa;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 11px;
             line-height: 1.4;
             overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-width: 100%;
           "><code>${this.escapeHtml(code)}</code></pre>
-        </div>
-      `;
+        </div>`;
     });
 
     // Handle other code blocks
-    content = content.replace(/```(\\w+)?\\n([\\s\\S]*?)\\n```/g, (match, lang, code) => {
-      return `<div style="margin: 12px 0; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 8px;"><pre style="margin: 0; color: #e6e6e6; font-family: monospace; font-size: 12px;"><code>${this.escapeHtml(code)}</code></pre></div>`;
+    content = content.replace(/```(\w+)?\n([\s\S]*?)\n```/g, (match, lang, code) => {
+      return `<div style="
+          margin: 4px 0 0 0;
+          border: 1px solid #27272a;
+          border-radius: 6px;
+          overflow: hidden;
+          background: #09090b;
+        ">
+          <pre style="
+            margin: 0;
+            padding: 12px;
+            background: #09090b;
+            color: #fafafa;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.4;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-width: 100%;
+          "><code>${this.escapeHtml(code)}</code></pre>
+        </div>`;
     });
 
     // Handle inline code
-    content = content.replace(/`([^`]+)`/g, '<code style="background: #2a2a2a; color: #e6e6e6; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 12px;">$1</code>');
+    content = content.replace(/`([^`]+)`/g, '<code style="background: #27272a; color: #fafafa; padding: 2px 6px; border-radius: 4px; font-family: \'SF Mono\', Monaco, \'Cascadia Code\', \'Roboto Mono\', Consolas, \'Courier New\', monospace; font-size: 13px;">$1</code>');
 
     // Handle line breaks
     content = content.replace(/\n/g, '<br>');
@@ -866,7 +1005,7 @@ class UIManager {
   }
 
   async showApiKeyModal() {
-    
+
     // Remove existing modal if any
     const existingModal = document.querySelector('#n9n-api-key-modal');
     if (existingModal) {
@@ -876,7 +1015,7 @@ class UIManager {
 
     // Check if there's already an API key
     const existingKey = await this.getExistingApiKey();
-    
+
     if (existingKey) {
       this.showApiKeyManagementModal(existingKey);
     } else {
@@ -917,7 +1056,7 @@ class UIManager {
 
   showApiKeyManagementModal(existingKey) {
     const maskedKey = this.maskApiKey(existingKey);
-    
+
     // Create modal overlay
     const modalOverlay = document.createElement('div');
     modalOverlay.id = 'n9n-api-key-modal';
@@ -1415,15 +1554,15 @@ class UIManager {
     ];
 
     let profileIcon = null;
-    
+
     for (const selector of possibleSelectors) {
       const elements = document.querySelectorAll(selector);
       for (const element of elements) {
         const rect = element.getBoundingClientRect();
         // Look for small images in the bottom-left quadrant
-        if (rect.width < 100 && rect.height < 100 && 
-            rect.left < window.innerWidth / 2 && 
-            rect.bottom > window.innerHeight / 2) {
+        if (rect.width < 100 && rect.height < 100 &&
+          rect.left < window.innerWidth / 2 &&
+          rect.bottom > window.innerHeight / 2) {
           profileIcon = element;
           break;
         }
@@ -1437,7 +1576,7 @@ class UIManager {
       profileIcon.style.borderRadius = '50%';
       profileIcon.style.position = 'relative';
       profileIcon.style.zIndex = '99999';
-      
+
       window.n9nHighlightedElement = profileIcon;
     } else {
     }
@@ -1462,7 +1601,7 @@ class UIManager {
         if (chrome && chrome.storage) {
           chrome.storage.local.set({ 'n8n_api_key': apiKey });
         }
-        
+
         this.showNotification('✅ API Key saved successfully!', 'success');
         closeModal();
       } else {
@@ -1477,7 +1616,7 @@ class UIManager {
     saveBtn.addEventListener('click', saveApiKey);
     cancelBtn.addEventListener('click', closeModal);
     closeBtn.addEventListener('click', closeModal);
-    
+
     modal.addEventListener('click', (e) => {
       if (e.target === modal) closeModal();
     });
@@ -1495,7 +1634,7 @@ class UIManager {
   }
 
   showNotification(message, type = 'info') {
-    
+
     // Create notification element
     const notification = document.createElement('div');
     notification.style.cssText = `
@@ -1574,7 +1713,7 @@ class UIManager {
         <path d="M3 12h18M3 6h18M3 18h18" stroke-linecap="round"/>
       </svg>
     `;
-    
+
     toggleButton.style.cssText = `
       position: fixed;
       bottom: 20px;
@@ -1593,9 +1732,9 @@ class UIManager {
       transition: all 0.2s ease;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
     `;
-    
+
     this.setupToggleButtonEvents(toggleButton);
-    
+
     document.body.appendChild(toggleButton);
     return toggleButton;
   }
@@ -1607,7 +1746,7 @@ class UIManager {
       toggleButton.style.transform = 'translateY(-2px)';
       toggleButton.style.boxShadow = '0 12px 30px rgba(0, 0, 0, 0.4)';
     });
-    
+
     toggleButton.addEventListener('mouseleave', () => {
       toggleButton.style.background = '#2a2a2a';
       toggleButton.style.color = '#a0a0a0';
@@ -1620,7 +1759,7 @@ class UIManager {
     if (!this.sidebar) return;
 
     this.isVisible = !this.isVisible;
-    
+
     if (this.isVisible) {
       this.sidebar.style.display = 'flex';
       setTimeout(() => {
@@ -1643,10 +1782,10 @@ class UIManager {
   renderMessage(message) {
     const isUser = message.role === 'user';
     const timeAgo = Utils.getTimeAgo(message.timestamp);
-    
+
     // Get user avatar (profile pic or first initial)
     const userAvatar = Utils.getUserAvatar();
-    
+
     return `
       <div style="
         display: flex;
@@ -1773,73 +1912,85 @@ class UIManager {
   addTypingIndicator() {
     const container = this.sidebar.querySelector('#messages-container');
     if (!container) return;
-    
+
     const indicator = document.createElement('div');
     indicator.className = 'typing-indicator';
     indicator.innerHTML = `
       <div style="
-        display: flex;
-        gap: 10px;
-        align-items: flex-start;
-        padding: 10px;
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.02);
+        margin-bottom: 16px;
+        padding: 0 16px;
       ">
+        <!-- Author label -->
         <div style="
-          width: 2Error in event handler: ReferenceError: Cannot access 'isN8nPage' before initialization at chrome-extension://jncpkjgmbjldengmmefdmlpeodiajnla/background.js:75:234px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+          font-size: 12px;
+          color: #71717a;
+          margin-bottom: 6px;
+          font-weight: 500;
+          text-align: right;
+        ">
+          Assistant
+        </div>
+        
+        <!-- Typing bubble -->
+        <div style="
+          background: #18181b;
+          border: 1px solid #27272a;
+          border-radius: 8px;
+          padding: 12px 16px;
+          color: #fafafa;
+          font-size: 14px;
+          line-height: 1.5;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
           display: flex;
           align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          font-size: 12px;
-        ">🤖</div>
-        <div style="
-          display: flex;
-          gap: 3px;
-          padding: 6px 0;
+          gap: 8px;
         ">
-          <span style="
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background: #a0a0a0;
-            animation: typing 1.4s infinite ease-in-out;
-          "></span>
-          <span style="
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background: #a0a0a0;
-            animation: typing 1.4s infinite ease-in-out;
-            animation-delay: 0.2s;
-          "></span>
-          <span style="
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background: #a0a0a0;
-            animation: typing 1.4s infinite ease-in-out;
-            animation-delay: 0.4s;
-          "></span>
+          <span style="color: #a1a1aa;">Thinking</span>
+          <div style="
+            display: flex;
+            gap: 4px;
+          ">
+            <div style="
+              width: 6px;
+              height: 6px;
+              border-radius: 50%;
+              background: #71717a;
+              animation: typing 1.4s infinite ease-in-out;
+            "></div>
+            <div style="
+              width: 6px;
+              height: 6px;
+              border-radius: 50%;
+              background: #71717a;
+              animation: typing 1.4s infinite ease-in-out;
+              animation-delay: 0.2s;
+            "></div>
+            <div style="
+              width: 6px;
+              height: 6px;
+              border-radius: 50%;
+              background: #71717a;
+              animation: typing 1.4s infinite ease-in-out;
+              animation-delay: 0.4s;
+            "></div>
+          </div>
         </div>
       </div>
     `;
-    
+
     // Add animation styles
     if (!document.querySelector('#typing-animation')) {
       const style = document.createElement('style');
       style.id = 'typing-animation';
       style.textContent = `
         @keyframes typing {
-          0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+          0%, 80%, 100% { transform: scale(0.8); opacity: 0.3; }
           40% { transform: scale(1); opacity: 1; }
         }
       `;
       document.head.appendChild(style);
     }
-    
+
     container.appendChild(indicator);
     container.scrollTop = container.scrollHeight;
   }
@@ -1849,17 +2000,288 @@ class UIManager {
     if (indicator) indicator.remove();
   }
 
-  updateConversationPill(chatManager) {
-    const pill = this.sidebar.querySelector('#current-convo-pill');
-    const titleSpan = this.sidebar.querySelector('#convo-title');
+  setupMessageButtonListeners() {
+    // Copy workflow buttons
+    const copyBtns = this.sidebar.querySelectorAll('.copy-workflow-btn');
+    copyBtns.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const messageId = btn.dataset.messageId;
+        await this.copyWorkflowFromMessage(messageId);
+      });
+      
+      // Hover effects
+      btn.addEventListener('mouseenter', () => {
+        btn.style.background = '#27272a';
+        btn.style.color = '#fafafa';
+        btn.style.borderColor = '#3f3f46';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.background = '#09090b';
+        btn.style.color = '#a1a1aa';
+        btn.style.borderColor = '#27272a';
+      });
+    });
     
-    const title = chatManager.getCurrentConversationTitle();
-    if (title) {
-      titleSpan.textContent = title;
-      pill.style.display = 'flex';
-    } else {
-      pill.style.display = 'none';
+    // Inject workflow buttons
+    const injectBtns = this.sidebar.querySelectorAll('.inject-workflow-btn');
+    injectBtns.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const messageId = btn.dataset.messageId;
+        await this.injectWorkflowFromMessage(messageId);
+      });
+      
+      // Hover effects
+      btn.addEventListener('mouseenter', () => {
+        btn.style.background = '#27272a';
+        btn.style.color = '#fafafa';
+        btn.style.borderColor = '#3f3f46';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.background = '#09090b';
+        btn.style.color = '#a1a1aa';
+        btn.style.borderColor = '#27272a';
+      });
+    });
+  }
+
+  async copyWorkflowFromMessage(messageId) {
+    try {
+      // Find the message and extract workflow JSON
+      const messages = await window.chatManager.getMessages();
+      const message = messages.find(m => m.id === messageId);
+
+      if (message && message.content.includes('```json')) {
+        const jsonMatch = message.content.match(/```json\n([\s\S]*?)\n```/);
+        if (jsonMatch) {
+          await navigator.clipboard.writeText(jsonMatch[1]);
+          this.showNotification('✅ Workflow copied to clipboard!', 'success');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to copy workflow:', error);
+      this.showNotification('❌ Failed to copy workflow', 'error');
     }
+  }
+
+  async injectWorkflowFromMessage(messageId) {
+    console.log('🚀 Starting workflow injection for message ID:', messageId);
+    
+    try {
+      // Find the message and extract workflow JSON
+      console.log('📋 Getting messages from chat manager...');
+      const messages = await window.chatManager.getMessages();
+      console.log('✅ Retrieved', messages.length, 'messages');
+      
+      const message = messages.find(m => m.id === messageId);
+      if (!message) {
+        console.error('❌ Message not found with ID:', messageId);
+        this.showNotification('❌ Message not found', 'error');
+        return;
+      }
+      
+      console.log('✅ Found message:', message.content.substring(0, 100) + '...');
+      
+      if (!message.content.includes('```json')) {
+        console.warn('⚠️ Message does not contain JSON code block');
+        this.showNotification('⚠️ No workflow JSON found in message', 'error');
+        return;
+      }
+      
+      console.log('🔍 Extracting JSON from message...');
+      const jsonMatch = message.content.match(/```json\n([\s\S]*?)\n```/);
+      
+      if (!jsonMatch) {
+        console.error('❌ Could not extract JSON from message');
+        this.showNotification('❌ Invalid JSON format', 'error');
+        return;
+      }
+      
+      console.log('📄 Raw JSON length:', jsonMatch[1].length, 'characters');
+      console.log('📄 JSON preview:', jsonMatch[1].substring(0, 200) + '...');
+      
+      let workflow;
+      try {
+        workflow = JSON.parse(jsonMatch[1]);
+        console.log('✅ Successfully parsed JSON workflow');
+        console.log('🔧 Workflow has', Object.keys(workflow).length, 'top-level properties');
+        if (workflow.nodes) {
+          console.log('📦 Workflow contains', workflow.nodes.length, 'nodes');
+        }
+      } catch (parseError) {
+        console.error('❌ JSON parsing failed:', parseError);
+        this.showNotification('❌ Invalid JSON format: ' + parseError.message, 'error');
+        return;
+      }
+      
+      // Check current page context
+      const currentUrl = window.location.href;
+      const hostname = window.location.hostname;
+      console.log('🌐 Current URL:', currentUrl);
+      console.log('🏠 Current hostname:', hostname);
+      
+      const isN8nPage = hostname.includes('n8n') || hostname.includes('localhost') || currentUrl.includes('n8n');
+      console.log('🔍 Is n8n page?', isN8nPage);
+      
+      if (isN8nPage) {
+        console.log('🎯 Attempting to inject workflow into n8n canvas...');
+        await this.injectIntoN8nCanvas(workflow, jsonMatch[1]);
+      } else {
+        console.log('📋 Not on n8n page, copying to clipboard as fallback');
+        await navigator.clipboard.writeText(jsonMatch[1]);
+        this.showNotification('📋 Workflow copied! Open n8n and paste (Ctrl+V)', 'info');
+      }
+      
+    } catch (error) {
+      console.error('💥 Critical error in injectWorkflowFromMessage:', error);
+      console.error('📊 Error stack:', error.stack);
+      this.showNotification('❌ Failed to inject workflow: ' + error.message, 'error');
+    }
+  }
+
+  async injectIntoN8nCanvas(workflow, rawJson) {
+    console.log('🎨 Starting n8n canvas injection...');
+    
+    // Check for n8n application context
+    const n8nChecks = {
+      'window.n8n': !!window.n8n,
+      'window.$nuxt': !!window.$nuxt,
+      'window.Vue': !!window.Vue,
+      'window.__NUXT__': !!window.__NUXT__,
+      'n8n app element': !!document.querySelector('#app'),
+      'n8n canvas': !!document.querySelector('[data-test-id="canvas"]'),
+      'n8n workflow': !!document.querySelector('.workflow-canvas'),
+      'vuex store': !!window.$nuxt?.$store
+    };
+    
+    console.log('🔍 n8n Environment checks:', n8nChecks);
+    
+    // Try multiple injection methods
+    let injectionSuccessful = false;
+    
+    // Method 1: Try n8n API if available
+    if (window.n8n && window.n8n.importWorkflow) {
+      console.log('🚀 Method 1: Using n8n.importWorkflow API');
+      try {
+        await window.n8n.importWorkflow(workflow);
+        console.log('✅ Method 1 successful!');
+        injectionSuccessful = true;
+      } catch (error) {
+        console.warn('⚠️ Method 1 failed:', error);
+      }
+    }
+    
+    // Method 2: Try Nuxt/Vue store injection
+    if (!injectionSuccessful && window.$nuxt?.$store) {
+      console.log('🚀 Method 2: Using Nuxt store injection');
+      try {
+        // Try to dispatch workflow import action
+        await window.$nuxt.$store.dispatch('workflows/importWorkflow', workflow);
+        console.log('✅ Method 2 successful!');
+        injectionSuccessful = true;
+      } catch (error) {
+        console.warn('⚠️ Method 2 failed:', error);
+      }
+    }
+    
+    // Method 3: Try simulating paste event
+    if (!injectionSuccessful) {
+      console.log('🚀 Method 3: Simulating paste event');
+      try {
+        await navigator.clipboard.writeText(rawJson);
+        
+        // Find canvas or app container
+        const canvas = document.querySelector('[data-test-id="canvas"]') || 
+                      document.querySelector('.workflow-canvas') ||
+                      document.querySelector('#app');
+        
+        if (canvas) {
+          console.log('📌 Found canvas element, simulating paste...');
+          canvas.focus();
+          
+          // Create and dispatch paste event
+          const pasteEvent = new ClipboardEvent('paste', {
+            clipboardData: new DataTransfer(),
+            bubbles: true,
+            cancelable: true
+          });
+          
+          // Add data to clipboard event
+          pasteEvent.clipboardData.setData('text/plain', rawJson);
+          
+          canvas.dispatchEvent(pasteEvent);
+          console.log('✅ Method 3: Paste event dispatched');
+          injectionSuccessful = true;
+        } else {
+          console.warn('⚠️ Method 3: No canvas element found');
+        }
+      } catch (error) {
+        console.warn('⚠️ Method 3 failed:', error);
+      }
+    }
+    
+    // Method 4: Try keyboard shortcut simulation
+    if (!injectionSuccessful) {
+      console.log('🚀 Method 4: Keyboard shortcut simulation');
+      try {
+        await navigator.clipboard.writeText(rawJson);
+        
+        // Simulate Ctrl+V
+        const keyEvent = new KeyboardEvent('keydown', {
+          key: 'v',
+          code: 'KeyV',
+          ctrlKey: true,
+          bubbles: true,
+          cancelable: true
+        });
+        
+        document.dispatchEvent(keyEvent);
+        console.log('✅ Method 4: Keyboard event dispatched');
+        injectionSuccessful = true;
+      } catch (error) {
+        console.warn('⚠️ Method 4 failed:', error);
+      }
+    }
+    
+    // Final result
+    if (injectionSuccessful) {
+      console.log('🎉 Workflow injection completed successfully!');
+      this.showNotification('⚡ Workflow injected into n8n!', 'success');
+    } else {
+      console.log('📋 All injection methods failed, falling back to clipboard');
+      await navigator.clipboard.writeText(rawJson);
+      this.showNotification('📋 Workflow copied to clipboard. Try pasting (Ctrl+V) in n8n.', 'info');
+    }
+    
+    // Additional debugging info
+    console.log('🔧 Available global objects:');
+    const globalObjects = ['n8n', '$nuxt', 'Vue', '__NUXT__', '$store', 'app'];
+    globalObjects.forEach(obj => {
+      if (window[obj]) {
+        console.log(`  ✅ window.${obj}:`, typeof window[obj]);
+        if (window[obj] && typeof window[obj] === 'object') {
+          console.log(`    Properties:`, Object.keys(window[obj]).slice(0, 10));
+        }
+      } else {
+        console.log(`  ❌ window.${obj}: undefined`);
+      }
+    });
+  }
+
+  updateConversationPill(chatManager) {
+    // Conversation pill was removed from UI - this function is now a no-op
+    // const pill = this.sidebar.querySelector('#current-convo-pill');
+    // const titleSpan = this.sidebar.querySelector('#convo-title');
+
+    // const title = chatManager.getCurrentConversationTitle();
+    // if (title) {
+    //   titleSpan.textContent = title;
+    //   pill.style.display = 'flex';
+    // } else {
+    //   pill.style.display = 'none';
+    // }
+    console.log('💬 Conversation pill functionality removed from UI');
   }
 
   getSidebar() {
