@@ -1,5 +1,5 @@
-// ChatManager.js - REAL PRODUCTION VERSION - Proper Google OAuth Authentication
-// No more user creation bullshit - uses existing Supabase Auth
+// ChatManager.js - REAL PRODUCTION VERSION - Multi-environment OAuth handling
+// Handles both web app (localhost:3000) and n8n extension environments
 
 class ChatManager {
   constructor() {
@@ -9,34 +9,93 @@ class ChatManager {
     this.supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2eGZpd2R0YnVrb3BmanJ1dHpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0NTAzOTksImV4cCI6MjA2NjAyNjM5OX0.YypL3hkw4rAcWWuL7i80BC20gN7J9JZZx6cLZa8ISZc';
     this.currentUser = null;
     this.authToken = null;
+    this.environment = this.detectEnvironment();
     this.initSupabase();
+  }
+
+  detectEnvironment() {
+    const hostname = window.location.hostname;
+    const port = window.location.port;
+    const protocol = window.location.protocol;
+    
+    if (hostname === 'localhost' && port === '3000') {
+      return 'webapp';
+    } else if (hostname.includes('100.78.164.43') || port === '5678') {
+      return 'n8n';
+    } else if (protocol === 'chrome-extension:') {
+      return 'extension';
+    } else {
+      return 'unknown';
+    }
   }
 
   async initSupabase() {
     try {
-      // Get existing session - user should already be logged in via Google
+      // First check if we have OAuth tokens in the URL (callback)
+      await this.handleOAuthCallback();
+      
+      // Then check for existing session
       await this.getExistingSession();
       
       if (this.currentUser) {
         console.log('✅ Authenticated user:', this.currentUser.email);
       } else {
-        console.log('⚠️ No authenticated user - redirect to login');
-        this.redirectToLogin();
+        console.log('⚠️ No authenticated user');
+        // Only redirect for webapp environment, not n8n extension
+        if (this.environment === 'webapp') {
+          this.redirectToLogin();
+        } else {
+          console.log('🔧 Extension mode - authentication required for full functionality');
+        }
       }
     } catch (error) {
       console.error('❌ Auth error:', error);
-      this.redirectToLogin();
+      if (this.environment === 'webapp') {
+        this.redirectToLogin();
+      }
     }
   }
 
-  async getExistingSession() {
+  async handleOAuthCallback() {
+    // Check if we have OAuth tokens in URL fragment
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token=')) {
+      try {
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        
+        if (accessToken) {
+          console.log('🎉 Found OAuth tokens in URL, processing...');
+          
+          // Store tokens
+          localStorage.setItem('supabase-auth-token', accessToken);
+          if (refreshToken) {
+            localStorage.setItem('supabase-refresh-token', refreshToken);
+          }
+          
+          // Get user info with the token
+          await this.getUserWithToken(accessToken);
+          
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          return true;
+        }
+      } catch (error) {
+        console.error('❌ Error processing OAuth callback:', error);
+      }
+    }
+    return false;
+  }
+
+  async getUserWithToken(token) {
     try {
-      // Get session from Supabase Auth
       const response = await fetch(`${this.supabaseUrl}/auth/v1/user`, {
         method: 'GET',
         headers: {
           'apikey': this.supabaseKey,
-          'Authorization': `Bearer ${this.getStoredToken()}`
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -44,12 +103,43 @@ class ChatManager {
         const userData = await response.json();
         if (userData && userData.id) {
           this.currentUser = userData;
-          this.authToken = this.getStoredToken();
+          this.authToken = token;
+          console.log('✅ User authenticated via OAuth:', userData.email);
+          return userData;
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error getting user with token:', error);
+    }
+    return null;
+  }
+
+  async getExistingSession() {
+    try {
+      const token = this.getStoredToken();
+      if (!token) {
+        throw new Error('No stored token');
+      }
+
+      // Get session from Supabase Auth
+      const response = await fetch(`${this.supabaseUrl}/auth/v1/user`, {
+        method: 'GET',
+        headers: {
+          'apikey': this.supabaseKey,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        if (userData && userData.id) {
+          this.currentUser = userData;
+          this.authToken = token;
           return;
         }
       }
 
-      // Try to refresh session
+      // Try to refresh session if token is invalid
       await this.refreshSession();
     } catch (error) {
       console.error('❌ Failed to get session:', error);
@@ -58,33 +148,24 @@ class ChatManager {
   }
 
   getStoredToken() {
-    // Check for stored auth token from Supabase
-    const supabaseAuth = localStorage.getItem('supabase.auth.token');
-    if (supabaseAuth) {
-      try {
-        const parsed = JSON.parse(supabaseAuth);
-        return parsed.access_token;
-      } catch (e) {
-        // Ignore parse errors
-      }
-    }
-
-    // Check for session in various storage locations
-    const sessionKeys = [
-      'sb-pvxfiwdtbukopfjrutzq-auth-token',
+    // Priority order for finding tokens
+    const tokenSources = [
       'supabase-auth-token',
-      'auth-token'
+      'sb-pvxfiwdtbukopfjrutzq-auth-token',
+      'supabase.auth.token'
     ];
 
-    for (const key of sessionKeys) {
+    for (const key of tokenSources) {
       const token = localStorage.getItem(key);
       if (token) {
         try {
+          // Try parsing as JSON first
           const parsed = JSON.parse(token);
           if (parsed.access_token) {
             return parsed.access_token;
           }
         } catch (e) {
+          // If not JSON, check if it's a raw token
           if (typeof token === 'string' && token.length > 20) {
             return token;
           }
@@ -121,6 +202,8 @@ class ChatManager {
         // Store new tokens
         localStorage.setItem('supabase-auth-token', authData.access_token);
         localStorage.setItem('supabase-refresh-token', authData.refresh_token);
+        
+        console.log('✅ Session refreshed successfully');
       } else {
         throw new Error('Failed to refresh session');
       }
@@ -132,8 +215,8 @@ class ChatManager {
 
   getStoredRefreshToken() {
     const refreshKeys = [
-      'sb-pvxfiwdtbukopfjrutzq-auth-token.refresh_token',
-      'supabase-refresh-token'
+      'supabase-refresh-token',
+      'sb-pvxfiwdtbukopfjrutzq-auth-token.refresh_token'
     ];
 
     for (const key of refreshKeys) {
@@ -144,18 +227,72 @@ class ChatManager {
     return null;
   }
 
+  getRedirectUrl() {
+    // Return appropriate redirect URL based on environment
+    switch (this.environment) {
+      case 'webapp':
+        return 'http://localhost:3000';
+      case 'n8n':
+        return encodeURIComponent(window.location.href);
+      case 'extension':
+        return chrome?.runtime?.getURL('popup.html') || window.location.href;
+      default:
+        return encodeURIComponent(window.location.href);
+    }
+  }
+
   redirectToLogin() {
-    // Redirect to Google OAuth login if not authenticated
-    const redirectUrl = encodeURIComponent(window.location.href);
+    const redirectUrl = this.getRedirectUrl();
     const googleAuthUrl = `${this.supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${redirectUrl}`;
     
-    console.log('🔐 Redirecting to Google login...');
+    console.log('🔐 Redirecting to Google login...', {
+      environment: this.environment,
+      redirectUrl: redirectUrl
+    });
+    
     window.location.href = googleAuthUrl;
   }
 
+  // Manual login for extension environments
+  async triggerManualLogin() {
+    if (this.environment === 'extension' || this.environment === 'n8n') {
+      // Open popup for OAuth
+      const redirectUrl = 'http://localhost:3000'; // Always use webapp for OAuth
+      const googleAuthUrl = `${this.supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${redirectUrl}`;
+      
+      // Open in new window/popup
+      const popup = window.open(googleAuthUrl, 'oauth', 'width=500,height=600');
+      
+      // Listen for popup to close or get tokens
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          // Check if tokens were set by the popup
+          setTimeout(() => {
+            this.getExistingSession().then(() => {
+              if (this.currentUser) {
+                console.log('✅ Login successful via popup');
+                // Refresh the page or notify the app
+                window.location.reload();
+              }
+            });
+          }, 1000);
+        }
+      }, 1000);
+      
+      return popup;
+    } else {
+      this.redirectToLogin();
+    }
+  }
+
   async makeSupabaseRequest(method, table, data = null, params = '') {
-    if (!this.authToken && !this.currentUser) {
-      throw new Error('User not authenticated');
+    // Allow some requests without auth for extension functionality
+    const publicTables = ['workflows']; // Add tables that should work without auth
+    const isPublicRequest = publicTables.includes(table) && method === 'GET';
+    
+    if (!this.authToken && !this.currentUser && !isPublicRequest) {
+      throw new Error('User not authenticated - login required for this operation');
     }
 
     try {
@@ -177,17 +314,21 @@ class ChatManager {
       const response = await fetch(url, options);
       
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 && this.authToken) {
           // Token expired, try to refresh
-          await this.refreshSession();
-          // Retry request with new token
-          options.headers['Authorization'] = `Bearer ${this.authToken}`;
-          const retryResponse = await fetch(url, options);
-          if (!retryResponse.ok) {
-            throw new Error(`Supabase request failed: ${retryResponse.status}`);
+          try {
+            await this.refreshSession();
+            // Retry request with new token
+            options.headers['Authorization'] = `Bearer ${this.authToken}`;
+            const retryResponse = await fetch(url, options);
+            if (!retryResponse.ok) {
+              throw new Error(`Supabase request failed: ${retryResponse.status}`);
+            }
+            const responseText = await retryResponse.text();
+            return responseText ? JSON.parse(responseText) : null;
+          } catch (refreshError) {
+            throw new Error('Authentication expired - please login again');
           }
-          const responseText = await retryResponse.text();
-          return responseText ? JSON.parse(responseText) : null;
         }
         
         let errorDetails = '';
@@ -212,7 +353,8 @@ class ChatManager {
   // Sync workflow with proper auth
   async syncWorkflowToSupabase(workflow) {
     if (!this.currentUser) {
-      throw new Error('User not authenticated - cannot sync workflow');
+      console.log('⚠️ User not authenticated - workflow will not be synced');
+      return null;
     }
 
     try {
@@ -220,7 +362,7 @@ class ChatManager {
         id: workflow.id || this.generateUUID(),
         name: workflow.name || 'Unnamed Workflow',
         description: workflow.description || '',
-        user_id: this.currentUser.id, // Use actual authenticated user ID
+        user_id: this.currentUser.id,
         n8n_workflow_json: workflow,
         project_id: null
       };
@@ -237,7 +379,9 @@ class ChatManager {
   // Get user's workflows
   async getUserWorkflows() {
     if (!this.currentUser) {
-      throw new Error('User not authenticated');
+      // Return empty array instead of throwing error for extension
+      console.log('⚠️ Not authenticated - returning empty workflows list');
+      return [];
     }
 
     try {
@@ -250,7 +394,7 @@ class ChatManager {
       return workflows || [];
     } catch (error) {
       console.error('❌ Failed to get workflows:', error);
-      throw error;
+      return [];
     }
   }
 
@@ -261,7 +405,8 @@ class ChatManager {
         return { 
           error: 'User not authenticated', 
           message: 'Please log in with Google to view workflows',
-          loginUrl: `${this.supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(window.location.href)}`
+          loginAction: this.environment === 'extension' ? 'manual' : 'redirect',
+          environment: this.environment
         };
       }
 
@@ -272,6 +417,7 @@ class ChatManager {
           email: this.currentUser.email,
           name: this.currentUser.user_metadata?.full_name || this.currentUser.email
         },
+        environment: this.environment,
         count: workflows.length,
         workflows: workflows.map(w => ({
           id: w.id,
@@ -282,7 +428,7 @@ class ChatManager {
       };
     } catch (error) {
       console.error('❌ Failed to get workflows context:', error);
-      return { error: error.message };
+      return { error: error.message, environment: this.environment };
     }
   }
 
