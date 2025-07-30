@@ -10,9 +10,9 @@
 const TEST_CONFIG = {
   // Supabase test environment
   supabase: {
-    // Use environment variables or fallback to test defaults
-    url: process.env.SUPABASE_TEST_URL || 'https://your-test-project.supabase.co',
-    key: process.env.SUPABASE_TEST_ANON_KEY || 'your-test-anon-key',
+    // Use environment variables or fallback to production values for testing
+    url: process.env.SUPABASE_TEST_URL || 'https://pvxfiwdtbukopfjrutzq.supabase.co',
+    key: process.env.SUPABASE_TEST_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2eGZpd2R0YnVrb3BmanJ1dHpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0NTAzOTksImV4cCI6MjA2NjAyNjM5OX0.YypL3hkw4rAcWWuL7i80',
     
     // Test schema for data isolation
     testSchema: 'test_n9n',

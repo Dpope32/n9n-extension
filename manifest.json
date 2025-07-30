@@ -27,10 +27,11 @@
       "js": [
         "modules/Utils.js",
         "modules/AuthManager.js",
-        "modules/ChatManager.js",
+        "modules/AuthUI.js",
         "modules/UIManager.js",
-        "src/services/ChatService.js",
-        "src/services/UIService.js",
+        "modules/APIManager.js",
+        "modules/ChatManager.js",
+        "modules/ChatService.js",
         "content-script-consolidated.js"
       ],
       "css": ["content-styles.css"],

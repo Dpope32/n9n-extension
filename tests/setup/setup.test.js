@@ -5,6 +5,9 @@
  * and all required dependencies are available.
  */
 
+// Import Bun test setup to initialize global utilities
+require('./bun-setup');
+
 const { TEST_CONFIG, validateConfig } = require('./test-config');
 
 describe('Testing Infrastructure Setup', () => {

@@ -34,6 +34,15 @@ global.localStorage = localStorageMock;
 // Mock fetch for API calls
 global.fetch = jest.fn();
 
+// Mock console methods to suppress logging during tests
+global.console = {
+  ...console,
+  log: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  info: jest.fn()
+};
+
 // Import AuthManager after mocks are set up
 const AuthManagerCode = require('fs').readFileSync(
   require('path').join(process.cwd(), 'modules/AuthManager.js'), 
@@ -45,6 +54,13 @@ eval(AuthManagerCode.replace('window.AuthManager = AuthManager;', 'global.AuthMa
 
 describe('AuthManager', () => {
   let authManager;
+  
+  // Helper function to generate unique test emails
+  const generateTestEmail = () => {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(7);
+    return `test-${timestamp}-${random}@example.com`;
+  };
   
   beforeEach(() => {
     // Reset all mocks
@@ -96,10 +112,11 @@ describe('AuthManager', () => {
 
   describe('signUp method', () => {
     test('should successfully sign up a new user', async () => {
+      const testEmail = generateTestEmail();
       const mockResponse = {
         user: {
           id: 'user-123',
-          email: 'test@example.com'
+          email: testEmail
         },
         session: {
           access_token: 'token-123',
@@ -116,7 +133,7 @@ describe('AuthManager', () => {
       authManager.storeSession = jest.fn().mockResolvedValue(undefined);
       authManager.notifyAuthStateChange = jest.fn();
 
-      const result = await authManager.signUp('test@example.com', 'password123');
+      const result = await authManager.signUp(testEmail, 'password123');
 
       expect(result.success).toBe(true);
       expect(result.user).toEqual(mockResponse.user);
@@ -137,7 +154,8 @@ describe('AuthManager', () => {
         })
       });
 
-      const result = await authManager.signUp('test@example.com', 'password123');
+      const testEmail = generateTestEmail();
+      const result = await authManager.signUp(testEmail, 'password123');
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('An account with this email already exists');
@@ -147,7 +165,8 @@ describe('AuthManager', () => {
     test('should handle network errors during signup', async () => {
       fetch.mockRejectedValueOnce(new Error('Network error'));
 
-      const result = await authManager.signUp('test@example.com', 'password123');
+      const testEmail = generateTestEmail();
+      const result = await authManager.signUp(testEmail, 'password123');
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Network error');
@@ -156,10 +175,11 @@ describe('AuthManager', () => {
 
   describe('signIn method', () => {
     test('should successfully sign in an existing user', async () => {
+      const testEmail = generateTestEmail();
       const mockResponse = {
         user: {
           id: 'user-123',
-          email: 'test@example.com'
+          email: testEmail
         },
         access_token: 'token-123',
         refresh_token: 'refresh-123',
@@ -174,7 +194,7 @@ describe('AuthManager', () => {
       authManager.storeSession = jest.fn().mockResolvedValue(undefined);
       authManager.notifyAuthStateChange = jest.fn();
 
-      const result = await authManager.signIn('test@example.com', 'password123');
+      const result = await authManager.signIn(testEmail, 'password123');
 
       expect(result.success).toBe(true);
       expect(result.user).toEqual(mockResponse.user);
@@ -194,7 +214,8 @@ describe('AuthManager', () => {
         })
       });
 
-      const result = await authManager.signIn('test@example.com', 'wrongpassword');
+      const testEmail = generateTestEmail();
+      const result = await authManager.signIn(testEmail, 'wrongpassword');
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Invalid email or password');
@@ -417,7 +438,8 @@ describe('AuthManager', () => {
     });
 
     test('should return current user', () => {
-      const user = { id: 'user-123', email: 'test@example.com' };
+      const testEmail = generateTestEmail();
+      const user = { id: 'user-123', email: testEmail };
       authManager.currentUser = user;
 
       const result = authManager.getCurrentUser();
@@ -625,7 +647,8 @@ describe('AuthManager', () => {
         json: () => Promise.resolve({})
       });
 
-      const result = await authManager.resetPassword('test@example.com');
+      const testEmail = generateTestEmail();
+      const result = await authManager.resetPassword(testEmail);
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('Password reset email sent. Please check your inbox.');
