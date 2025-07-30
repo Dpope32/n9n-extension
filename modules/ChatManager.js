@@ -1,5 +1,5 @@
-// ChatManager.js - Fixed Authentication Version
-// Proper Supabase client-side authentication
+// ChatManager.js - REAL PRODUCTION VERSION - Multi-environment OAuth handling
+// Handles both web app (localhost:3000) and n8n extension environments
 
 class ChatManager {
   constructor() {
@@ -9,75 +9,105 @@ class ChatManager {
     this.supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2eGZpd2R0YnVrb3BmanJ1dHpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0NTAzOTksImV4cCI6MjA2NjAyNjM5OX0.YypL3hkw4rAcWWuL7i80BC20gN7J9JZZx6cLZa8ISZc';
     this.currentUser = null;
     this.authToken = null;
-    this.isInitialized = false;
     this.initSupabase();
+  }
+
+  detectEnvironment() {
+    const hostname = window.location.hostname;
+    const port = window.location.port;
+    const protocol = window.location.protocol;
+    
+    if (hostname === 'localhost' && port === '3000') {
+      return 'webapp';
+    } else if (hostname.includes('100.78.164.43') || port === '5678') {
+      return 'n8n';
+    } else if (protocol === 'chrome-extension:') {
+      return 'extension';
+    } else {
+      return 'unknown';
+    }
   }
 
   async initSupabase() {
     try {
-      console.log('🔄 Initializing Supabase authentication...');
+      // Get existing session - user should already be logged in via Google
+      await this.getExistingSession();
       
-      // Check for OAuth callback first
-      const authFromCallback = await this.handleOAuthCallback();
-      if (authFromCallback) {
-        console.log('✅ Authentication successful from OAuth callback');
-        this.isInitialized = true;
-        return;
+      if (this.currentUser) {
+        console.log('✅ Authenticated user:', this.currentUser.email);
+      } else {
+        console.log('⚠️ No authenticated user - redirect to login');
+        this.redirectToLogin();
       }
-      
-      // Try to get existing session from localStorage
-      const sessionData = this.getStoredAuthSession();
-      if (sessionData) {
-        console.log('🔍 Found stored session, validating...');
-        const isValid = await this.validateStoredSession(sessionData);
-        if (isValid) {
-          console.log('✅ Stored session is valid');
-          this.isInitialized = true;
+    } catch (error) {
+      console.error('❌ Auth error:', error);
+      this.redirectToLogin();
+    }
+  }
+
+  async getExistingSession() {
+    try {
+      // Get session from Supabase Auth
+      const response = await fetch(`${this.supabaseUrl}/auth/v1/user`, {
+        method: 'GET',
+        headers: {
+          'apikey': this.supabaseKey,
+          'Authorization': `Bearer ${this.getStoredToken()}`
+        }
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        if (userData && userData.id) {
+          this.currentUser = userData;
+          this.authToken = this.getStoredToken();
           return;
         } else {
           console.log('⚠️ Stored session is invalid, clearing...');
           this.clearStoredAuth();
         }
       }
-      
-      // No valid authentication found
-      console.log('ℹ️ No valid authentication found - user needs to log in');
-      this.isInitialized = true;
-      
+
+      // Try to refresh session
+      await this.refreshSession();
     } catch (error) {
       console.error('❌ Auth initialization error:', error);
       this.isInitialized = true;
     }
   }
 
-  getStoredAuthSession() {
-    // Try to get Supabase auth session from localStorage
-    const authKey = `sb-${this.supabaseUrl.split('//')[1].split('.')[0]}-auth-token`;
-    const storedAuth = localStorage.getItem(authKey);
-    
-    if (storedAuth) {
+  getStoredToken() {
+    // Check for stored auth token from Supabase
+    const supabaseAuth = localStorage.getItem('supabase.auth.token');
+    if (supabaseAuth) {
       try {
-        const parsed = JSON.parse(storedAuth);
-        if (parsed.access_token && parsed.user) {
-          return parsed;
-        }
+        const parsed = JSON.parse(supabaseAuth);
+        return parsed.access_token;
       } catch (e) {
-        console.warn('Failed to parse stored auth:', e);
+        // Ignore parse errors
       }
     }
 
-    // Check for manual storage keys
-    const manualToken = localStorage.getItem('supabase-auth-token');
-    const manualUser = localStorage.getItem('supabase-user-data');
-    
-    if (manualToken && manualUser) {
-      try {
-        return {
-          access_token: manualToken,
-          user: JSON.parse(manualUser)
-        };
-      } catch (e) {
-        console.warn('Failed to parse manual auth:', e);
+    // Check for session in various storage locations
+    const sessionKeys = [
+      'sb-pvxfiwdtbukopfjrutzq-auth-token',
+      'supabase-auth-token',
+      'auth-token'
+    ];
+
+    for (const key of sessionKeys) {
+      const token = localStorage.getItem(key);
+      if (token) {
+        try {
+          const parsed = JSON.parse(token);
+          if (parsed.access_token) {
+            return parsed.access_token;
+          }
+        } catch (e) {
+          if (typeof token === 'string' && token.length > 20) {
+            return token;
+          }
+        }
       }
     }
 
@@ -165,163 +195,74 @@ class ChatManager {
       localStorage.setItem('supabase-user-data', JSON.stringify(authData.user));
       if (authData.refresh_token) {
         localStorage.setItem('supabase-refresh-token', authData.refresh_token);
+      } else {
+        throw new Error('Failed to refresh session');
       }
     } catch (error) {
-      console.error('Failed to store auth session:', error);
+      console.error('❌ Failed to refresh session:', error);
+      throw error;
     }
   }
 
-  clearStoredAuth() {
-    try {
-      const authKey = `sb-${this.supabaseUrl.split('//')[1].split('.')[0]}-auth-token`;
-      localStorage.removeItem(authKey);
-      localStorage.removeItem('supabase-auth-token');
-      localStorage.removeItem('supabase-refresh-token');
-      localStorage.removeItem('supabase-user-data');
-      
-      this.currentUser = null;
-      this.authToken = null;
-    } catch (error) {
-      console.error('Failed to clear auth:', error);
+  getStoredRefreshToken() {
+    const refreshKeys = [
+      'sb-pvxfiwdtbukopfjrutzq-auth-token.refresh_token',
+      'supabase-refresh-token'
+    ];
+
+    for (const key of refreshKeys) {
+      const token = localStorage.getItem(key);
+      if (token) return token;
     }
+
+    return null;
   }
 
-  async handleOAuthCallback() {
-    try {
-      const url = window.location.href;
+  redirectToLogin() {
+    // Redirect to Google OAuth login if not authenticated
+    const redirectUrl = encodeURIComponent(window.location.href);
+    const googleAuthUrl = `${this.supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${redirectUrl}`;
+    
+    console.log('🔐 Redirecting to Google login...');
+    window.location.href = googleAuthUrl;
+  }
+
+  // Manual login for extension environments
+  async triggerManualLogin() {
+    if (this.environment === 'extension' || this.environment === 'n8n') {
+      // Open popup for OAuth
+      const redirectUrl = 'http://localhost:3000'; // Always use webapp for OAuth
+      const googleAuthUrl = `${this.supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${redirectUrl}`;
       
-      // Check if we have OAuth tokens in URL hash or search params
-      if (url.includes('access_token=')) {
-        console.log('🔐 Processing OAuth callback...');
-        
-        let params;
-        if (url.includes('#access_token=')) {
-          params = new URLSearchParams(window.location.hash.slice(1));
-        } else {
-          params = new URLSearchParams(window.location.search);
+      // Open in new window/popup
+      const popup = window.open(googleAuthUrl, 'oauth', 'width=500,height=600');
+      
+      // Listen for popup to close or get tokens
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          // Check if tokens were set by the popup
+          setTimeout(() => {
+            this.getExistingSession().then(() => {
+              if (this.currentUser) {
+                console.log('✅ Login successful via popup');
+                // Refresh the page or notify the app
+                window.location.reload();
+              }
+            });
+          }, 1000);
         }
-        
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
-        const expiresIn = params.get('expires_in');
-        const tokenType = params.get('token_type');
-        
-        if (accessToken) {
-          // Get user info with the access token
-          const userResponse = await fetch(`${this.supabaseUrl}/auth/v1/user`, {
-            method: 'GET',
-            headers: {
-              'apikey': this.supabaseKey,
-              'Authorization': `Bearer ${accessToken}`
-            }
-          });
-          
-          if (userResponse.ok) {
-            const userData = await userResponse.json();
-            
-            // Create auth session object
-            const authSession = {
-              access_token: accessToken,
-              refresh_token: refreshToken,
-              expires_in: parseInt(expiresIn || '3600'),
-              token_type: tokenType || 'bearer',
-              user: userData
-            };
-            
-            // Store the session
-            this.storeAuthSession(authSession);
-            this.authToken = accessToken;
-            this.currentUser = userData;
-            
-            // Clean up URL
-            if (window.history && window.history.replaceState) {
-              const cleanUrl = window.location.origin + window.location.pathname;
-              window.history.replaceState({}, document.title, cleanUrl);
-            }
-            
-            console.log('✅ OAuth authentication successful for:', userData.email);
-            return true;
-          } else {
-            console.error('Failed to get user info:', userResponse.status);
-          }
-        }
-      }
+      }, 1000);
       
-      return false;
-    } catch (error) {
-      console.error('❌ OAuth callback error:', error);
-      return false;
-    }
-  }
-
-  // Public method to trigger Google login
-  async loginWithGoogle() {
-    console.log('🔐 Starting Google OAuth login...');
-    
-    // Get the current page URL for redirect
-    const redirectUrl = window.location.origin + window.location.pathname;
-    const authUrl = `${this.supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
-    
-    console.log('🔗 Auth URL:', authUrl);
-    
-    // For browser extension context, open in new tab
-    if (typeof chrome !== 'undefined' && chrome.tabs) {
-      // Extension context
-      chrome.tabs.create({ url: authUrl });
+      return popup;
     } else {
-      // Regular web context
-      window.open(authUrl, '_blank', 'width=500,height=600,scrollbars=yes,resizable=yes');
-    }
-    
-    return { success: true, message: 'Login window opened. Please complete authentication.' };
-  }
-
-  // Check if user is logged in
-  isLoggedIn() {
-    return !!(this.currentUser && this.authToken);
-  }
-
-  // Get current user info
-  getCurrentUser() {
-    return this.currentUser;
-  }
-
-  // Manual logout
-  async logout() {
-    try {
-      // Call Supabase logout endpoint if we have a token
-      if (this.authToken) {
-        try {
-          await fetch(`${this.supabaseUrl}/auth/v1/logout`, {
-            method: 'POST',
-            headers: {
-              'apikey': this.supabaseKey,
-              'Authorization': `Bearer ${this.authToken}`
-            }
-          });
-        } catch (e) {
-          // Ignore logout endpoint errors
-          console.warn('Logout endpoint error (ignored):', e);
-        }
-      }
-      
-      // Clear all stored auth data
-      this.clearStoredAuth();
-      
-      console.log('🔐 User logged out');
-      return { success: true, message: 'Logged out successfully' };
-    } catch (error) {
-      console.error('❌ Logout error:', error);
-      return { success: false, error: error.message };
+      this.redirectToLogin();
     }
   }
 
   async makeSupabaseRequest(method, table, data = null, params = '') {
-    // Wait for initialization if not ready
-    let attempts = 0;
-    while (!this.isInitialized && attempts < 50) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
+    if (!this.authToken && !this.currentUser) {
+      throw new Error('User not authenticated');
     }
 
     const token = this.authToken || this.supabaseKey;
@@ -346,22 +287,17 @@ class ChatManager {
       const response = await fetch(url, options);
       
       if (!response.ok) {
-        if (response.status === 401 && this.authToken) {
-          console.log('🔄 Token expired, attempting refresh...');
-          // Try to refresh token
-          const sessionData = this.getStoredAuthSession();
-          if (sessionData && await this.tryRefreshToken(sessionData)) {
-            // Retry request with new token
-            options.headers['Authorization'] = `Bearer ${this.authToken}`;
-            const retryResponse = await fetch(url, options);
-            if (retryResponse.ok) {
-              const responseText = await retryResponse.text();
-              return responseText ? JSON.parse(responseText) : null;
-            }
+        if (response.status === 401) {
+          // Token expired, try to refresh
+          await this.refreshSession();
+          // Retry request with new token
+          options.headers['Authorization'] = `Bearer ${this.authToken}`;
+          const retryResponse = await fetch(url, options);
+          if (!retryResponse.ok) {
+            throw new Error(`Supabase request failed: ${retryResponse.status}`);
           }
-          // If refresh failed, clear auth and throw error
-          this.clearStoredAuth();
-          throw new Error('Authentication expired. Please log in again.');
+          const responseText = await retryResponse.text();
+          return responseText ? JSON.parse(responseText) : null;
         }
         
         let errorDetails = '';
@@ -387,7 +323,7 @@ class ChatManager {
 
   // Sync workflow with proper auth
   async syncWorkflowToSupabase(workflow) {
-    if (!this.isLoggedIn()) {
+    if (!this.currentUser) {
       throw new Error('User not authenticated - cannot sync workflow');
     }
 
@@ -412,7 +348,7 @@ class ChatManager {
 
   // Get user's workflows
   async getUserWorkflows() {
-    if (!this.isLoggedIn()) {
+    if (!this.currentUser) {
       throw new Error('User not authenticated');
     }
 
@@ -426,7 +362,7 @@ class ChatManager {
       return workflows || [];
     } catch (error) {
       console.error('❌ Failed to get workflows:', error);
-      throw error;
+      return [];
     }
   }
 
@@ -437,7 +373,7 @@ class ChatManager {
         return { 
           error: 'User not authenticated', 
           message: 'Please log in with Google to view workflows',
-          requiresAuth: true
+          loginUrl: `${this.supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(window.location.href)}`
         };
       }
 
@@ -448,6 +384,7 @@ class ChatManager {
           email: this.currentUser.email,
           name: this.currentUser.user_metadata?.full_name || this.currentUser.email
         },
+        environment: this.environment,
         count: workflows.length,
         workflows: workflows.map(w => ({
           id: w.id,
@@ -459,7 +396,7 @@ class ChatManager {
       };
     } catch (error) {
       console.error('❌ Failed to get workflows context:', error);
-      return { error: error.message };
+      return { error: error.message, environment: this.environment };
     }
   }
 
