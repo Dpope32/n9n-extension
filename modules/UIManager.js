@@ -583,7 +583,7 @@ class UIManager {
       const recentConversations = await this.getRecentConversations();
 
       if (recentConversations.length > 0) {
-        console.log(`📋 Rendering ${recentConversations.length} recent conversations`);
+        console.log(`📋 Rendering ${recentConversations.length} 0ations`);
         this.renderRecentConversations(recentConversations);
       } else {
         console.log('👋 No recent conversations, showing welcome message');
@@ -720,28 +720,35 @@ class UIManager {
     });
   }
 
-  loadConversation(conversationId) {
-    // TODO: Implement conversation loading
-    // For now, just show the conversation and switch to chat mode
-    this.showNotification(`Loading conversation ${conversationId}...`, 'info');
-
-    // Show the conversation pill - REMOVED since pill no longer exists
-    // const pill = this.sidebar.querySelector('#current-convo-pill');
-    // const titleSpan = this.sidebar.querySelector('#convo-title');
-
-    // if (pill && titleSpan) {
-    //   // Try to get conversation title
-    //   const conversations = this.getRecentConversations();
-    //   const conv = conversations.find(c => c.id === conversationId);
-
-    //   if (conv) {
-    //     titleSpan.textContent = conv.title || 'Untitled Conversation';
-    //     pill.style.display = 'flex';
-    //   }
-    // }
-
-    // Switch back to welcome/empty chat view for now
-    this.renderWelcomeMessage();
+  async loadConversation(conversationId) {
+    try {
+      this.showNotification(`Loading conversation ${conversationId}...`, 'info');
+      
+      // Check if ChatManager is available
+      if (!window.chatManager) {
+        window.chatManager = new window.ChatManager();
+        // Wait for initialization
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      // Load the conversation using ChatManager
+      const success = await window.chatManager.loadConversation(conversationId);
+      
+      if (success) {
+        // Get and render the loaded messages
+        const messages = await window.chatManager.getMessages();
+        this.renderMessages(messages);
+        this.showNotification('Conversation loaded!', 'success');
+      } else {
+        console.error('Failed to load conversation');
+        this.showNotification('Failed to load conversation', 'error');
+        this.renderWelcomeMessage();
+      }
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+      this.showNotification('Error loading conversation', 'error');
+      this.renderWelcomeMessage();
+    }
   }
 
   renderWelcomeMessage() {
