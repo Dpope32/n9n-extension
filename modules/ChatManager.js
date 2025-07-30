@@ -1,5 +1,5 @@
-// ChatManager.js - Handles all chat functionality with Supabase REST API
-// Depends on: Utils
+// ChatManager.js - REAL PRODUCTION VERSION - Proper Google OAuth Authentication
+// No more user creation bullshit - uses existing Supabase Auth
 
 class ChatManager {
   constructor() {
@@ -7,86 +7,164 @@ class ChatManager {
     this.currentConversationId = null;
     this.supabaseUrl = 'https://pvxfiwdtbukopfjrutzq.supabase.co';
     this.supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2eGZpd2R0YnVrb3BmanJ1dHpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0NTAzOTksImV4cCI6MjA2NjAyNjM5OX0.YypL3hkw4rAcWWuL7i80BC20gN7J9JZZx6cLZa8ISZc';
-    this.userId = null;
+    this.currentUser = null;
+    this.authToken = null;
     this.initSupabase();
-  }
-
-  // Simple UUID generator since crypto.randomUUID() isn't available
-  generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c == 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
   }
 
   async initSupabase() {
     try {
-      // Try to get or create an anonymous user
-      await this.ensureUserExists();
-      console.log('✅ Using user ID:', this.userId);
+      // Get existing session - user should already be logged in via Google
+      await this.getExistingSession();
+      
+      if (this.currentUser) {
+        console.log('✅ Authenticated user:', this.currentUser.email);
+      } else {
+        console.log('⚠️ No authenticated user - redirect to login');
+        this.redirectToLogin();
+      }
     } catch (error) {
-      console.error('❌ Failed to initialize Supabase:', error);
-      this.fallbackToLocalStorage();
+      console.error('❌ Auth error:', error);
+      this.redirectToLogin();
     }
   }
 
-  async ensureUserExists() {
-    // Check if we have a stored user ID
-    let storedUserId = localStorage.getItem('n9n_user_id');
-    
-    if (storedUserId) {
-      // Verify the user still exists in Supabase
-      try {
-        const userData = await this.makeSupabaseRequest(
-          'GET',
-          'users',
-          null,
-          `?id=eq.${storedUserId}&limit=1`
-        );
-        
-        if (userData && userData.length > 0) {
-          this.userId = storedUserId;
+  async getExistingSession() {
+    try {
+      // Get session from Supabase Auth
+      const response = await fetch(`${this.supabaseUrl}/auth/v1/user`, {
+        method: 'GET',
+        headers: {
+          'apikey': this.supabaseKey,
+          'Authorization': `Bearer ${this.getStoredToken()}`
+        }
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        if (userData && userData.id) {
+          this.currentUser = userData;
+          this.authToken = this.getStoredToken();
           return;
         }
-      } catch (error) {
-        console.log('🔍 Stored user not found, creating new one');
+      }
+
+      // Try to refresh session
+      await this.refreshSession();
+    } catch (error) {
+      console.error('❌ Failed to get session:', error);
+      throw error;
+    }
+  }
+
+  getStoredToken() {
+    // Check for stored auth token from Supabase
+    const supabaseAuth = localStorage.getItem('supabase.auth.token');
+    if (supabaseAuth) {
+      try {
+        const parsed = JSON.parse(supabaseAuth);
+        return parsed.access_token;
+      } catch (e) {
+        // Ignore parse errors
       }
     }
 
-    // Create a new anonymous user
-    try {
-      const newUserId = this.generateUUID();
-      const userData = {
-        id: newUserId,
-        email: `anonymous-${newUserId}@n9n.local`,
-        display_name: 'Anonymous User',
-        is_anonymous: true
-      };
+    // Check for session in various storage locations
+    const sessionKeys = [
+      'sb-pvxfiwdtbukopfjrutzq-auth-token',
+      'supabase-auth-token',
+      'auth-token'
+    ];
 
-      const createdUser = await this.makeSupabaseRequest('POST', 'users', userData);
-      
-      if (createdUser && createdUser.length > 0) {
-        this.userId = createdUser[0].id;
-        localStorage.setItem('n9n_user_id', this.userId);
+    for (const key of sessionKeys) {
+      const token = localStorage.getItem(key);
+      if (token) {
+        try {
+          const parsed = JSON.parse(token);
+          if (parsed.access_token) {
+            return parsed.access_token;
+          }
+        } catch (e) {
+          if (typeof token === 'string' && token.length > 20) {
+            return token;
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  async refreshSession() {
+    try {
+      const refreshToken = this.getStoredRefreshToken();
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      const response = await fetch(`${this.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: {
+          'apikey': this.supabaseKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          refresh_token: refreshToken
+        })
+      });
+
+      if (response.ok) {
+        const authData = await response.json();
+        this.currentUser = authData.user;
+        this.authToken = authData.access_token;
+        
+        // Store new tokens
+        localStorage.setItem('supabase-auth-token', authData.access_token);
+        localStorage.setItem('supabase-refresh-token', authData.refresh_token);
       } else {
-        throw new Error('Failed to create user');
+        throw new Error('Failed to refresh session');
       }
     } catch (error) {
-      console.error('❌ Failed to create user:', error);
-      // Fall back to localStorage-only mode
-      this.userId = null;
+      console.error('❌ Failed to refresh session:', error);
+      throw error;
     }
+  }
+
+  getStoredRefreshToken() {
+    const refreshKeys = [
+      'sb-pvxfiwdtbukopfjrutzq-auth-token.refresh_token',
+      'supabase-refresh-token'
+    ];
+
+    for (const key of refreshKeys) {
+      const token = localStorage.getItem(key);
+      if (token) return token;
+    }
+
+    return null;
+  }
+
+  redirectToLogin() {
+    // Redirect to Google OAuth login if not authenticated
+    const redirectUrl = encodeURIComponent(window.location.href);
+    const googleAuthUrl = `${this.supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${redirectUrl}`;
+    
+    console.log('🔐 Redirecting to Google login...');
+    window.location.href = googleAuthUrl;
   }
 
   async makeSupabaseRequest(method, table, data = null, params = '') {
+    if (!this.authToken && !this.currentUser) {
+      throw new Error('User not authenticated');
+    }
+
     try {
       const url = `${this.supabaseUrl}/rest/v1/${table}${params}`;
       const options = {
         method,
         headers: {
           'apikey': this.supabaseKey,
-          'Authorization': `Bearer ${this.supabaseKey}`,
+          'Authorization': `Bearer ${this.authToken || this.supabaseKey}`,
           'Content-Type': 'application/json',
           'Prefer': 'return=representation'
         }
@@ -99,7 +177,19 @@ class ChatManager {
       const response = await fetch(url, options);
       
       if (!response.ok) {
-        // Get more detailed error information
+        if (response.status === 401) {
+          // Token expired, try to refresh
+          await this.refreshSession();
+          // Retry request with new token
+          options.headers['Authorization'] = `Bearer ${this.authToken}`;
+          const retryResponse = await fetch(url, options);
+          if (!retryResponse.ok) {
+            throw new Error(`Supabase request failed: ${retryResponse.status}`);
+          }
+          const responseText = await retryResponse.text();
+          return responseText ? JSON.parse(responseText) : null;
+        }
+        
         let errorDetails = '';
         try {
           const errorBody = await response.text();
@@ -115,19 +205,104 @@ class ChatManager {
       return responseText ? JSON.parse(responseText) : null;
     } catch (error) {
       console.error('❌ Supabase request error:', error);
-      console.error('Request details:', { method, table, data, params });
       throw error;
     }
   }
 
+  // Sync workflow with proper auth
+  async syncWorkflowToSupabase(workflow) {
+    if (!this.currentUser) {
+      throw new Error('User not authenticated - cannot sync workflow');
+    }
+
+    try {
+      const workflowData = {
+        id: workflow.id || this.generateUUID(),
+        name: workflow.name || 'Unnamed Workflow',
+        description: workflow.description || '',
+        user_id: this.currentUser.id, // Use actual authenticated user ID
+        n8n_workflow_json: workflow,
+        project_id: null
+      };
+
+      const result = await this.makeSupabaseRequest('POST', 'workflows', workflowData);
+      console.log('✅ Workflow synced to Supabase:', workflow.name);
+      return result;
+    } catch (error) {
+      console.error('❌ Failed to sync workflow:', error);
+      throw error;
+    }
+  }
+
+  // Get user's workflows
+  async getUserWorkflows() {
+    if (!this.currentUser) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      const workflows = await this.makeSupabaseRequest(
+        'GET', 
+        'workflows', 
+        null, 
+        `?user_id=eq.${this.currentUser.id}&order=created_at.desc`
+      );
+      return workflows || [];
+    } catch (error) {
+      console.error('❌ Failed to get workflows:', error);
+      throw error;
+    }
+  }
+
+  // Method for AI to get current workflows context
+  async getCurrentWorkflowsContext() {
+    try {
+      if (!this.currentUser) {
+        return { 
+          error: 'User not authenticated', 
+          message: 'Please log in with Google to view workflows',
+          loginUrl: `${this.supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(window.location.href)}`
+        };
+      }
+
+      const workflows = await this.getUserWorkflows();
+      return {
+        user: {
+          id: this.currentUser.id,
+          email: this.currentUser.email,
+          name: this.currentUser.user_metadata?.full_name || this.currentUser.email
+        },
+        count: workflows.length,
+        workflows: workflows.map(w => ({
+          id: w.id,
+          name: w.name,
+          description: w.description,
+          created_at: w.created_at
+        }))
+      };
+    } catch (error) {
+      console.error('❌ Failed to get workflows context:', error);
+      return { error: error.message };
+    }
+  }
+
+  generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  // === ORIGINAL CHAT FUNCTIONALITY PRESERVED ===
+
   fallbackToLocalStorage() {
     console.log('📱 Falling back to localStorage');
     this.messages = JSON.parse(localStorage.getItem('n9n_chat_messages') || '[]');
-    this.userId = null;
   }
 
   async getMessages() {
-    if (!this.userId || !this.currentConversationId) {
+    if (!this.currentUser || !this.currentConversationId) {
       return this.messages;
     }
 
@@ -167,9 +342,8 @@ class ChatManager {
     this.messages.push(message);
     
     // Save to Supabase if available
-    if (this.userId && this.currentConversationId) {
+    if (this.currentUser && this.currentConversationId) {
       try {
-        // Let Supabase auto-generate the ID for messages too
         const messageData = {
           conversation_id: this.currentConversationId,
           role,
@@ -179,10 +353,8 @@ class ChatManager {
 
         const savedMessage = await this.makeSupabaseRequest('POST', 'ai_messages', messageData);
         
-        // Update the local message with the Supabase-generated ID
         if (savedMessage && savedMessage.length > 0) {
           message.id = savedMessage[0].id;
-          // Update the message in the local array
           this.messages[this.messages.length - 1] = message;
         }
 
@@ -209,9 +381,8 @@ class ChatManager {
     localStorage.removeItem('n9n_chat_messages');
   }
 
-  // Conversation management with Supabase REST API
   async getRecentConversations() {
-    if (!this.userId) {
+    if (!this.currentUser) {
       const conversations = JSON.parse(localStorage.getItem('n9n_conversations') || '[]');
       return conversations.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 10);
     }
@@ -221,7 +392,7 @@ class ChatManager {
         'GET',
         'ai_conversations',
         null,
-        `?user_id=eq.${this.userId}&order=created_at.desc&limit=10`
+        `?user_id=eq.${this.currentUser.id}&order=created_at.desc&limit=10`
       );
       
       return data.map(conv => ({
@@ -239,11 +410,10 @@ class ChatManager {
   }
 
   async saveConversation(title) {
-    if (!this.userId) {
+    if (!this.currentUser) {
       return this.saveConversationLocal(title);
     }
 
-    // Check if a conversation with this title already exists
     const existingConversation = await this.findExistingConversation(title);
     if (existingConversation) {
       console.log('📋 Using existing conversation:', existingConversation.id);
@@ -251,15 +421,13 @@ class ChatManager {
       return existingConversation.id;
     }
 
-    // Retry logic for handling conflicts
     const maxRetries = 3;
     let retryCount = 0;
 
     while (retryCount < maxRetries) {
       try {
-        // Let Supabase auto-generate the ID by not including it
         const conversationData = {
-          user_id: this.userId,
+          user_id: this.currentUser.id,
           title: title.substring(0, 50) + (title.length > 50 ? '...' : ''),
           status: 'active',
           total_messages: 0,
@@ -278,7 +446,6 @@ class ChatManager {
       } catch (error) {
         retryCount++;
         
-        // If it's a 409 conflict, check if the conversation was created by another process
         if (error.message.includes('409')) {
           const existingAfterConflict = await this.findExistingConversation(title);
           if (existingAfterConflict) {
@@ -289,7 +456,6 @@ class ChatManager {
           
           if (retryCount < maxRetries) {
             console.log(`⚠️ Conflict detected, retrying (${retryCount}/${maxRetries})...`);
-            // Add a small delay before retry
             await new Promise(resolve => setTimeout(resolve, 100 * retryCount));
             continue;
           }
@@ -320,7 +486,7 @@ class ChatManager {
   async loadConversation(conversationId) {
     this.currentConversationId = conversationId;
     
-    if (!this.userId) {
+    if (!this.currentUser) {
       const conversations = JSON.parse(localStorage.getItem('n9n_conversations') || '[]');
       const conversation = conversations.find(c => c.id === conversationId);
       
@@ -332,7 +498,6 @@ class ChatManager {
     }
 
     try {
-      // Load conversation messages
       await this.getMessages();
       return true;
     } catch (error) {
@@ -344,7 +509,7 @@ class ChatManager {
   async updateConversation() {
     if (!this.currentConversationId) return;
     
-    if (!this.userId) {
+    if (!this.currentUser) {
       const conversations = JSON.parse(localStorage.getItem('n9n_conversations') || '[]');
       const index = conversations.findIndex(c => c.id === this.currentConversationId);
       
@@ -376,9 +541,8 @@ class ChatManager {
     this.currentConversationId = null;
   }
 
-  // Check if a conversation with similar title already exists
   async findExistingConversation(title) {
-    if (!this.userId) {
+    if (!this.currentUser) {
       return null;
     }
 
@@ -388,7 +552,7 @@ class ChatManager {
         'GET',
         'ai_conversations',
         null,
-        `?user_id=eq.${this.userId}&title=eq.${encodeURIComponent(truncatedTitle)}&limit=1`
+        `?user_id=eq.${this.currentUser.id}&title=eq.${encodeURIComponent(truncatedTitle)}&limit=1`
       );
 
       return data && data.length > 0 ? data[0] : null;
@@ -398,9 +562,7 @@ class ChatManager {
     }
   }
 
-  // Auto-save conversation after exchanges
   async handleMessageExchange(userMessage) {
-    // Save conversation after first exchange
     if (this.messages.length === 2 && !this.currentConversationId) {
       this.currentConversationId = await this.saveConversation(userMessage);
     } else if (this.currentConversationId) {
