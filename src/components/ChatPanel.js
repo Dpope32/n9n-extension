@@ -198,7 +198,7 @@ export class ChatPanel {
           font-size: 18px; 
           font-weight: 600; 
           color: #ffffff;
-        ">Welcome to n9n AI Copilot</h3>
+        ">Welcome to n9n</h3>
         <p style="
           margin: 0 0 24px 0; 
           font-size: 14px; 

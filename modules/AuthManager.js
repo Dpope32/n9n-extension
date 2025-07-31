@@ -15,8 +15,11 @@ class AuthManager {
 
   async init() {
     try {
-      // Check for existing session on startup
-      await this.getSession();
+      // Only check for existing session if we have a token
+      const token = localStorage.getItem('supabase.auth.token');
+      if (token) {
+        await this.getSession();
+      }
       this.isInitialized = true;
       console.log('✅ AuthManager initialized');
     } catch (error) {
@@ -106,15 +109,62 @@ class AuthManager {
   }
 
   /**
+   * Sign in with Google OAuth
+   * @returns {Promise<Object>} Authentication result
+   */
+  async signInWithGoogle() {
+    try {
+      // Use the real Supabase client for Google OAuth
+      if (!window.supabaseClient) {
+        throw new Error('Supabase client not available');
+      }
+
+      const { data, error } = await window.supabaseClient.signInWithGoogle();
+      
+      if (error) {
+        throw error;
+      }
+
+      // Get the current user after successful sign in
+      const { user } = await window.supabaseClient.getCurrentUser();
+      
+      if (user) {
+        this.currentUser = user;
+        this.currentSession = {
+          access_token: user.access_token,
+          refresh_token: user.refresh_token,
+          expires_at: user.expires_at,
+          user: user
+        };
+        
+        await this.storeSession(this.currentSession);
+        this.notifyAuthStateChange();
+        console.log('✅ User signed in with Google successfully:', user.email);
+        
+        return {
+          success: true,
+          user: user,
+          session: this.currentSession,
+          message: 'Signed in with Google successfully'
+        };
+      } else {
+        throw new Error('No user data returned from Google sign in');
+      }
+    } catch (error) {
+      console.error('❌ Google sign in failed:', error);
+      return this.handleAuthError(error, 'google-signin');
+    }
+  }
+
+  /**
    * Sign out the current user
    * @returns {Promise<Object>} Sign out result
    */
   async signOut() {
     try {
-      if (this.currentSession?.access_token) {
-        await this.makeAuthRequest('POST', 'logout', {}, {
-          'Authorization': `Bearer ${this.currentSession.access_token}`
-        });
+      // Use the real Supabase client for sign out
+      if (window.supabaseClient) {
+        await window.supabaseClient.signOut();
       }
       
       await this.clearSession();
@@ -170,6 +220,22 @@ class AuthManager {
    */
   async getSession() {
     try {
+      // Use the real Supabase client to get session
+      if (window.supabaseClient) {
+        const { session } = await window.supabaseClient.getSession();
+        if (session) {
+          this.currentSession = {
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+            expires_at: session.expires_at,
+            user: session.user
+          };
+          this.currentUser = session.user;
+          return this.currentSession;
+        }
+      }
+      
+      // Fallback to storage-based approach
       // First check if we have a session in memory
       if (this.currentSession && this.isSessionValid(this.currentSession)) {
         return this.currentSession;
@@ -197,7 +263,26 @@ class AuthManager {
       this.currentUser = null;
       return null;
     } catch (error) {
-      console.error('❌ Error getting session:', error);
+      // Handle extension context invalidation gracefully
+      if (error.message.includes('Extension context invalidated')) {
+        console.log('⚠️ Extension context invalidated, using localStorage fallback');
+        try {
+          const localSession = localStorage.getItem('n9n_session');
+          if (localSession) {
+            const parsed = JSON.parse(localSession);
+            if (this.isSessionValid(parsed)) {
+              this.currentSession = parsed;
+              this.currentUser = parsed.user;
+              return parsed;
+            }
+          }
+        } catch (localError) {
+          console.error('❌ Error reading from localStorage:', localError);
+        }
+      } else {
+        console.error('❌ Error getting session:', error);
+      }
+      
       await this.clearSession();
       this.currentSession = null;
       this.currentUser = null;
@@ -262,8 +347,43 @@ class AuthManager {
    * Get current authenticated user
    * @returns {Object|null} Current user or null
    */
-  getCurrentUser() {
-    return this.currentUser;
+  async getCurrentUser() {
+    try {
+      // Use the real Supabase client to get current user
+      if (window.supabaseClient) {
+        const { user } = await window.supabaseClient.getCurrentUser();
+        if (user) {
+          this.currentUser = user;
+          return user;
+        }
+      }
+      
+      // Fallback to session-based approach
+      if (!this.currentUser) {
+        await this.getSession();
+      }
+      return this.currentUser;
+    } catch (error) {
+      console.error('❌ Error getting current user:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get the current session's ID token (access token)
+   * @returns {Promise<string|null>} ID token or null if not authenticated
+   */
+  async getIdToken() {
+    // If we don't have a current session, try to get it first
+    if (!this.currentSession) {
+      await this.getSession();
+    }
+    
+    if (this.currentSession && this.isSessionValid(this.currentSession)) {
+      return this.currentSession.access_token;
+    }
+    
+    return null;
   }
 
   /**
@@ -340,14 +460,24 @@ class AuthManager {
    */
   async storeSession(session) {
     try {
-      await chrome.storage.local.set({
-        'n9n_auth_session': session
-      });
-      console.log('✅ Session stored successfully');
+      // Check if chrome.storage is available (extension context might be invalidated)
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.set({
+          'n9n_auth_session': session
+        });
+        console.log('✅ Session stored successfully');
+      } else {
+        throw new Error('Chrome storage not available');
+      }
     } catch (error) {
       console.error('❌ Failed to store session:', error);
       // Fallback to localStorage
-      localStorage.setItem('n9n_auth_session', JSON.stringify(session));
+      try {
+        localStorage.setItem('n9n_session', JSON.stringify(session));
+        console.log('✅ Session stored in localStorage fallback');
+      } catch (e) {
+        console.error('❌ Failed to store session in localStorage:', e);
+      }
     }
   }
 
@@ -357,36 +487,67 @@ class AuthManager {
    */
   async getStoredSession() {
     try {
-      const result = await chrome.storage.local.get(['n9n_auth_session']);
-      return result.n9n_auth_session || null;
+      // Check if chrome.storage is available (extension context might be invalidated)
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        const result = await chrome.storage.local.get(['n9n_session']);
+        return result.n9n_session || null;
+      } else {
+        throw new Error('Chrome storage not available');
+      }
     } catch (error) {
-      console.error('❌ Failed to get stored session:', error);
-      // Fallback to localStorage
-      try {
-        const stored = localStorage.getItem('n9n_auth_session');
-        return stored ? JSON.parse(stored) : null;
-      } catch (e) {
-        return null;
+      // Handle extension context invalidation gracefully
+      if (error.message.includes('Extension context invalidated')) {
+        console.log('⚠️ Extension context invalidated, trying localStorage fallback');
+        try {
+          const stored = localStorage.getItem('n9n_session');
+          return stored ? JSON.parse(stored) : null;
+        } catch (localError) {
+          console.error('❌ Error reading from localStorage:', localError);
+          return null;
+        }
+      } else {
+        console.error('❌ Failed to get stored session:', error);
+        // Fallback to localStorage
+        try {
+          const stored = localStorage.getItem('n9n_session');
+          return stored ? JSON.parse(stored) : null;
+        } catch (e) {
+          console.error('❌ Failed to get session from localStorage:', e);
+          return null;
+        }
       }
     }
   }
 
   /**
-   * Clear stored session
+   * Clear session from storage
+   * @returns {Promise<void>}
    */
   async clearSession() {
     try {
-      await chrome.storage.local.remove(['n9n_auth_session']);
-      console.log('✅ Session cleared from storage');
+      // Clear from chrome.storage
+      if (chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.remove(['n9n_session', 'n9n_user']);
+        console.log('✅ Session cleared from storage');
+      }
     } catch (error) {
-      console.error('❌ Failed to clear session from storage:', error);
+      // Handle extension context invalidation gracefully
+      if (error.message.includes('Extension context invalidated')) {
+        console.log('⚠️ Extension context invalidated, clearing local storage only');
+      } else {
+        console.error('❌ Error clearing session from storage:', error);
+      }
     }
-    
-    // Also clear from localStorage fallback
+
     try {
-      localStorage.removeItem('n9n_auth_session');
+      // Clear from localStorage as fallback
+      localStorage.removeItem('n9n_session');
+      localStorage.removeItem('n9n_user');
+      localStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem('supabase.auth.refresh_token');
+      console.log('✅ Session cleared from localStorage');
     } catch (error) {
-      // Ignore localStorage errors
+      console.error('❌ Error clearing session from localStorage:', error);
     }
   }
 

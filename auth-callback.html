@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>n9n Copilot - Authentication Callback</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #18181b;
+            color: #fafafa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+        }
+        .spinner {
+            border: 3px solid #27272a;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h2>Completing authentication...</h2>
+        <p>Please wait while we complete your sign-in.</p>
+    </div>
+
+    <script>
+        // Handle Supabase OAuth callback
+        async function handleCallback() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const accessToken = urlParams.get('access_token');
+                const refreshToken = urlParams.get('refresh_token');
+                
+                if (accessToken) {
+                    // Store the tokens
+                    localStorage.setItem('supabase.auth.token', accessToken);
+                    if (refreshToken) {
+                        localStorage.setItem('supabase.auth.refresh_token', refreshToken);
+                    }
+                    
+                    // Notify the parent window
+                    if (window.opener) {
+                        window.opener.postMessage({
+                            type: 'SUPABASE_AUTH_SUCCESS',
+                            user: {
+                                access_token: accessToken,
+                                refresh_token: refreshToken
+                            }
+                        }, '*');
+                    }
+                    
+                    // Close the popup
+                    setTimeout(() => {
+                        window.close();
+                    }, 1000);
+                } else {
+                    throw new Error('No access token received');
+                }
+            } catch (error) {
+                console.error('Authentication error:', error);
+                document.body.innerHTML = `
+                    <div class="container">
+                        <h2>Authentication failed</h2>
+                        <p>Please try again.</p>
+                        <button onclick="window.close()">Close</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Handle the callback when the page loads
+        handleCallback();
+    </script>
+</body>
+</html> 

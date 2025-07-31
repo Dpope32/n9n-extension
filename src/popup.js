@@ -146,10 +146,10 @@ class PopupManager {
                 </p>
                 <button class="action-btn action-btn-primary" id="sign-in-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2"/>
+                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2"/>
                     </svg>
-                    Continue with Google
+                    Open n8n Copilot
                 </button>
             </div>
         `;
@@ -222,13 +222,11 @@ class PopupManager {
             });
         }
         
-        // Sign in
+        // Sign in - now opens n8n page where authentication happens
         const signInBtn = document.getElementById('sign-in-btn');
         if (signInBtn) {
             signInBtn.addEventListener('click', () => {
-                chrome.tabs.create({ 
-                    url: chrome.runtime.getURL('src/auth.html')
-                });
+                chrome.tabs.create({ url: 'https://n8n.io' });
                 window.close();
             });
         }

@@ -6,6 +6,7 @@ class N9NCopilot {
     this.isN8NPage = this.detectN8NPage();
     this.sidebar = null;
     this.isVisible = false;
+    this.uiManager = null;
     
     // Assign to global scope immediately so ChatPanel can access it
     window.n9nCopilot = this;
@@ -42,9 +43,48 @@ class N9NCopilot {
     this.isN8NPage = this.detectN8NPage();
     
     if (this.isN8NPage) {
-      await this.createSidebar();
+      console.log('🚀 Initializing n9n copilot on n8n page...');
+      
+      // Wait for Main to be available
+      if (!window.Main) {
+        console.warn('⚠️ Main not available, retrying...');
+        setTimeout(() => this.init(), 1000);
+        return;
+      }
+      
+      // Initialize the main application
+      try {
+        if (!window.n9nCopilot || !window.n9nCopilot.uiManager) {
+          window.n9nCopilot = new window.Main();
+          await window.n9nCopilot.initialize();
+        }
+        
+        this.uiManager = window.n9nCopilot.uiManager;
+        
+        await this.createSidebar();
+        
+        // Add fallback to ensure welcome message is shown
+        setTimeout(() => {
+          const messagesContainer = document.querySelector('#messages-container');
+          if (messagesContainer && messagesContainer.innerHTML.trim() === '') {
+            console.log('🔧 Messages container empty, forcing welcome message...');
+            if (window.chatManager && window.chatManager.renderWelcomeMessage) {
+              window.chatManager.renderWelcomeMessage();
+            } else {
+              console.error('❌ ChatManager not available for fallback');
+            }
+          }
+        }, 2000);
+      } catch (error) {
+        console.error('❌ Error initializing main application:', error);
+        // Still try to create sidebar with fallback content
+        this.createFallbackSidebar();
+      }
       this.setupMessageListener();
       this.setupKeyboardShortcuts();
+      
+      // Initialize workflow detector
+      this.initializeWorkflowDetector();
       
       // Check if sidebar should auto-open
       const shouldAutoOpen = localStorage.getItem('n9n_sidebar_was_open') === 'true' || 
@@ -61,8 +101,87 @@ class N9NCopilot {
       
       // Check if there's a workflow to inject (from redirect method)
       this.checkForWorkflowToInject();
+      
+      console.log('✅ n9n copilot initialization complete');
     } else {
       console.log('Not an n8n page, skipping copilot initialization');
+    }
+  }
+
+  initializeWorkflowDetector() {
+    try {
+      console.log('🔍 Initializing WorkflowDetector...');
+      
+      // Wait for WorkflowDetector to be available
+      const initDetector = () => {
+        if (window.WorkflowDetector) {
+          window.workflowDetector = new window.WorkflowDetector();
+          window.workflowDetector.initialize();
+          console.log('✅ WorkflowDetector initialized');
+        } else {
+          console.warn('⚠️ WorkflowDetector not available, retrying...');
+          setTimeout(initDetector, 1000);
+        }
+      };
+      
+      // Start initialization after a delay to ensure all modules are loaded
+      setTimeout(initDetector, 2000);
+      
+    } catch (error) {
+      console.error('💥 Error initializing WorkflowDetector:', error);
+    }
+  }
+
+  checkForWorkflowToInject() {
+    try {
+      const workflowToInject = localStorage.getItem('n9n_workflow_to_inject');
+      if (workflowToInject) {
+        console.log('📥 Found workflow to inject, processing...');
+        localStorage.removeItem('n9n_workflow_to_inject');
+        
+        // Process workflow injection after a delay to ensure n8n is ready
+        setTimeout(() => {
+          this.injectWorkflow(JSON.parse(workflowToInject));
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('💥 Error checking for workflow to inject:', error);
+    }
+  }
+
+  async injectWorkflow(workflowData) {
+    try {
+      console.log('🚀 Injecting workflow:', workflowData.name);
+      
+      // Try to inject via n8n's API if available
+      if (window.n8n && window.n8n.importWorkflow) {
+        await window.n8n.importWorkflow(workflowData);
+        console.log('✅ Workflow injected via n8n API');
+      } else {
+        // Fallback: try to fill the workflow data manually
+        console.log('⚠️ n8n API not available, attempting manual injection...');
+        this.manualWorkflowInjection(workflowData);
+      }
+    } catch (error) {
+      console.error('💥 Error injecting workflow:', error);
+    }
+  }
+
+  manualWorkflowInjection(workflowData) {
+    // This is a fallback method for when n8n API is not available
+    console.log('🔧 Attempting manual workflow injection...');
+    
+    // Try to find and fill workflow name input
+    const nameInput = document.querySelector('[data-test-id="workflow-name-input"], input[placeholder*="workflow name"], input[placeholder*="Workflow name"]');
+    if (nameInput) {
+      nameInput.value = workflowData.name;
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+      console.log('✅ Set workflow name:', workflowData.name);
+    }
+    
+    // Show success message
+    if (window.uiManager) {
+      window.uiManager.showMessage(`Workflow "${workflowData.name}" data prepared. You may need to manually import the JSON.`, 'info');
     }
   }
 
@@ -85,9 +204,184 @@ class N9NCopilot {
     `;
     document.body.appendChild(this.overlay);
 
-    // Initialize UI manager  
-    this.uiManager = new window.UIManager();
-    this.sidebar = this.uiManager.createSidebar();
+    // Get sidebar from the initialized uiManager
+    if (this.uiManager) {
+      this.sidebar = this.uiManager.getSidebar();
+    }
+  }
+
+  createFallbackSidebar() {
+    console.log('🎲 Creating fallback sidebar...');
+    
+    // Create toggle button
+    this.createToggleButton();
+    
+    // Create overlay
+    this.overlay = document.createElement('div');
+    this.overlay.id = 'n9n-drawer-overlay';
+    this.overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.1);
+      z-index: 999998;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      pointer-events: none;
+    `;
+    document.body.appendChild(this.overlay);
+    
+    // Create basic sidebar
+    const sidebar = document.createElement('div');
+    sidebar.id = 'n9n-copilot-sidebar';
+    sidebar.style.cssText = `
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 360px;
+      height: 100vh;
+      background: rgba(9, 9, 11, 0.95);
+      border-left: 1px solid #27272a;
+      backdrop-filter: blur(20px);
+      z-index: 999999;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    `;
+    
+    sidebar.innerHTML = `
+      <div style="
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background: #09090b;
+        color: #fafafa;
+      ">
+        <!-- Header -->
+        <div style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 20px;
+          background: #09090b;
+          border-bottom: 1px solid #27272a;
+          min-height: 60px;
+        ">
+          <div style="display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 16px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="color: #fafafa;">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2"/>
+              <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2"/>
+              <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span style="color: #fafafa;">n9n</span>
+          </div>
+          <button onclick="document.getElementById('n9n-copilot-sidebar').style.transform = 'translateX(100%)'" style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: #18181b;
+            border: 1px solid #27272a;
+            border-radius: 8px;
+            color: #a1a1aa;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          ">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        
+        <!-- Content -->
+        <div id="messages-container" style="
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow-y: auto;
+          overflow-x: hidden;
+          background: #09090b;
+          color: #fafafa;
+          padding: 20px;
+        ">
+          <div style="
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+          ">
+            <div style="
+              width: 80px;
+              height: 80px;
+              background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-bottom: 24px;
+            ">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+                <path d="M2 17L12 22L22 17"/>
+                <path d="M2 12L12 17L22 12"/>
+              </svg>
+            </div>
+            
+            <h2 style="
+              margin: 0 0 12px;
+              color: #fafafa;
+              font-size: 24px;
+              font-weight: 700;
+            ">Welcome to n9n Copilot</h2>
+            
+            <p style="
+              margin: 0 0 32px;
+              color: #a1a1aa;
+              font-size: 16px;
+              line-height: 1.5;
+              max-width: 280px;
+            ">Failed to initialize. Please refresh the page and try again.</p>
+            
+            <button onclick="location.reload()" style="
+              padding: 12px 16px;
+              background: #3b82f6;
+              border: 1px solid #60a5fa;
+              border-radius: 8px;
+              color: white;
+              font-size: 14px;
+              cursor: pointer;
+              transition: all 0.2s;
+            ">Refresh Page</button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(sidebar);
+    this.sidebar = sidebar;
+    
+    // Create basic UIManager-like object
+    this.uiManager = {
+      toggleSidebar: () => {
+        if (this.sidebar.style.transform === 'translateX(0px)') {
+          this.sidebar.style.transform = 'translateX(100%)';
+          this.isVisible = false;
+        } else {
+          this.sidebar.style.transform = 'translateX(0)';
+          this.isVisible = true;
+        }
+      },
+      getIsVisible: () => this.isVisible
+    };
   }
 
   createToggleButton() {
@@ -260,5 +554,15 @@ class N9NCopilot {
   }
 }
 
-// Initialize
+// Initialize copilot
+console.log('🔥 Loading n9n copilot...');
 const copilot = new N9NCopilot();
+
+// Start initialization when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    copilot.init();
+  });
+} else {
+  copilot.init();
+}

@@ -25,13 +25,18 @@
         "*://100.78.164.43:*/*"
       ],
       "js": [
+        "src/utils/supabase.js",
         "modules/Utils.js",
         "modules/AuthManager.js",
         "modules/AuthUI.js",
-        "modules/UIManager.js",
-        "modules/APIManager.js",
-        "modules/ChatManager.js",
+        "modules/WorkflowDetector.js",
         "modules/ChatService.js",
+        "modules/SidebarManager.js",
+        "modules/ModalManager.js",
+        "modules/ChatManager.js",
+        "modules/WorkflowManager.js",
+        "modules/UIManager.js",
+        "modules/Main.js",
         "content-script-consolidated.js"
       ],
       "css": ["content-styles.css"],
@@ -49,7 +54,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["assets/void.png"],
+      "resources": ["assets/void.png", "auth-callback.html", "test-database.html"],
       "matches": ["<all_urls>"]
     }
   ],
